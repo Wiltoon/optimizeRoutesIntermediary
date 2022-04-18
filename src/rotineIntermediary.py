@@ -3,21 +3,21 @@ from conditions import *
 from operations import *
 from classes.types import *
 
-## Essa função deve colocar o packet no melhor vizinho
+## Essa função deve colocar os packets nos melhores vizinhos
 def reallocatePacksVehicle(
     instance: CVRPInstance, 
     vehicle: CVRPSolutionVehicle, 
     vehiclesPossibles, 
     route_weak,
     id_vehicle: int,
-    T: int):
+    T: int) -> CVRPSolution:
   index = 0
   MAX_ = instance.capacity
   for pack_free in vehicle.deliveries:
     neighs = {}
     packs_neigs = []
     id_pack = route_weak[index]
-    index += 1
+    index += 1 #cada vez pega outro pacote da rota fraca
     # Dicionario com chave: id delivery, valor: distancia do pacote atual ate outro pacote
     for i in range(len(instance.deliveries)):
       neighs[i] = distance_osrm(pack_free, instance.deliveries[i])
@@ -38,18 +38,22 @@ def reallocatePacksVehicle(
             auxT += 1
       else:
         break
-    new_solution = insertionPackInNeighborhood(
+    # solução parcial em dict
+    insertionPackInNeighborhood(
         instance,
-        vehiclesPossibles, 
-        routes_neighs, 
-        id_pack
+        vehiclesPossibles, #id vehicle: [ids_packs]
+        routes_neighs, #ids das rotas vizinhas
+        id_pack,
+        id_vehicle
     )
+    
 
+# Deve retornar um new_solution: CVRPSolution
 def rotineIntermediary(
     instance: CVRPInstance,
     solution: CVRPSolution,
     T: int # numero de pacotes próximos
-  ):
+  ) -> CVRPSolution:
   new_solution = solution
   while limitVehicleTotal(instance, new_solution):
     vehicle, id_vehicle = selectVehicleWeak(instance, new_solution)

@@ -1,11 +1,12 @@
 from classes.types import *
-# Essa função deve decidir em qual rota vizinha o pacote deve ser inserido
-# e retornar a solução final de como ficará as rotas
+# Essa função deve decidir em qual rota vizinha o pacote (id_pack) deve ser inserido
+# e modificar o vehicles Possibles de como ficará as rotas
 def insertionPackInNeighborhood(
     instance: CVRPInstance,
-    vehiclesPossibles,
+    vehiclesPossibles, 
     routes_neighs, 
-    id_pack: int
+    id_pack: int,
+    id_old_route: int
     ):
   best_values = []
   best_routes = []
@@ -16,10 +17,14 @@ def insertionPackInNeighborhood(
     best_routes.append(route)     # lista das rotas vizinhas construidas com o pacote
   id_b = best_values.index(min(best_values, key = float))
   id_best_route = neighbors[id_b]
-  route_incluse = best_routes[id_b]
-  solution = create_new_solution(instance, vehiclesPossibles, route_incluse) # teoricamente o vehiclesPossibles precisa estar com a resposta final
-  return solution
-
+  route_create = best_routes[id_b]
+  create_new_solution(
+    new_route = route_create,
+    vehiclesPossibles = vehiclesPossibles, # modificado
+    id_pack_modificated = id_pack, 
+    id_old_route = id_old_route,
+    id_new_route = id_best_route
+    ) # teoricamente o vehiclesPossibles precisa estar com a resposta final
 
 def createVehiclesPossibles(solution: CVRPSolution):
   #enumere as rotas da solution
@@ -34,9 +39,19 @@ def createVehiclesPossibles(solution: CVRPSolution):
   return vehiclesPossible
 
 # dado o dicionario transformar ele em resposta cvrp solution
-def create_new_solution(instance, vehiclesPossibles, route_incluse):
+def create_new_solution(
+  new_route,
+  vehiclesPossibles, # modificado
+  id_pack_modificated, 
+  id_old_route,
+  id_new_route
+  ):
   print(vehiclesPossibles)
-  return solution
+  vehiclesPossibles[id_old_route].remove(id_pack_modificated)
+  vehiclesPossibles[id_new_route] = new_route
+  print("============ MODIFICATED ==========")
+  print(vehiclesPossibles)
+  print("-----------------------------------")
 
 
 # Essa função deve avaliar determinado pacote em uma rota e qual o melhor resultado
@@ -78,3 +93,17 @@ def sortedVehiclesPerChargeUsed(vehicles):
   for i in sorted(cargas, key = cargas.get):
     vehicles_ordened.append(i)
   return vehicles_ordened
+
+def solutionJson(
+  instance: CVRPInstance, 
+  vehiclesPossibles
+  )-> CVRPSolution:
+  name = instance.name
+  vehicles = []
+  for k, v in vehiclesPossibles.items():
+    vehicle = []
+    for id_pack in v:
+      vehicle.append(instance.deliveries[id_pack])
+    vehicles.append(vehicle)
+  solution = CVRPSolution(name=name, vehicles=vehicles)
+  return solution
