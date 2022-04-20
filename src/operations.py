@@ -1,4 +1,5 @@
 from .classes.types import *
+from .computeDistances import *
 # Essa função deve decidir em qual rota vizinha o pacote (id_pack) deve ser inserido
 # e modificar o vehicles Possibles de como ficará as rotas
 def insertionPackInNeighborhood(
@@ -58,21 +59,26 @@ def create_new_solution(
 def insertPacketInRoute(
     instance: CVRPInstance,
     id_pack, 
-    route_select):
+    route_select,
+    osrm_config: OSRMConfig):
   p_insertion = []
   for i in range(len(route_select)+1):
     route_aux = [el for el in route_select]
     p_insertion.append(route_aux.insert(i, id_pack))
   scores = []
   for possible in p_insertion:
-    score = calculateDistanceRoute(instance, possible)
+    score = calculateDistanceRoute(instance, possible, osrm_config)
     scores.append(score)
   route = p_insertion[scores.index(min(scores, key = float))] # lista de pacotes arranjado da melhor forma
   return route, min(scores, key = float)
 
-def selectVehicleWeak(dictVehicles, vehicles_ordened, MAX_: int):
-  minVehicles = sum([d.size for k, v in dictVehicles.items() for d in v.deliveries])/MAX_
-  sumVehicles = len(dictVehicles)
+#retornar a rota do veículo de menor uso e seu id
+def selectVehicleWeak(instance, solution):
+  MAX_ = instance.vehicle_capacity
+  minVehicles = sum([d.size for d in instance.deliveries])/MAX_
+  sumVehicles = len(solution.vehicles)
+  vehicles_ordened = []
+
   if sumVehicles <= minVehicles:
     return None, -1
   weak = vehicles_ordened[0]
