@@ -1,4 +1,5 @@
 import requests
+from .classes.types import *
 
 def calculateDistanceRoute(
     instance: CVRPInstance, 

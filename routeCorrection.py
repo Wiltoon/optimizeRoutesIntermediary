@@ -1,5 +1,5 @@
-from classes.types import *
-from rotineIntermediary import *
+from src.classes.types import *
+from src.rotineIntermediary import *
 
 def main():
     T = 3

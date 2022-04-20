@@ -1,7 +1,7 @@
-from computeDistances import *
-from conditions import *
-from operations import *
-from classes.types import *
+from .computeDistances import * 
+from .conditions import *
+from .operations import *
+from .classes.types import *
 
 ## Essa função deve colocar os packets nos melhores vizinhos
 def reallocatePacksVehicle(
@@ -17,7 +17,7 @@ def reallocatePacksVehicle(
     neighs = {}
     packs_neigs = []
     id_pack = route_weak[index]
-    index += 1 #cada vez pega outro pacote da rota fraca
+    index += 1 # cada vez pega outro pacote da rota fraca
     # Dicionario com chave: id delivery, valor: distancia do pacote atual ate outro pacote
     for i in range(len(instance.deliveries)):
       neighs[i] = distance_osrm(pack_free, instance.deliveries[i])

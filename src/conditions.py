@@ -1,3 +1,5 @@
+from .classes.types import *
+
 def limitVehicleTotal(instance, solution):
   MAX_ = instance.capacity
   minVehicles = sum([d.size for d in instance.deliveries])/MAX_

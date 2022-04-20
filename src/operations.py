@@ -1,4 +1,4 @@
-from classes.types import *
+from .classes.types import *
 # Essa função deve decidir em qual rota vizinha o pacote (id_pack) deve ser inserido
 # e modificar o vehicles Possibles de como ficará as rotas
 def insertionPackInNeighborhood(
