@@ -77,8 +77,10 @@ def selectVehicleWeak(instance, solution):
   MAX_ = instance.vehicle_capacity
   minVehicles = sum([d.size for d in instance.deliveries])/MAX_
   sumVehicles = len(solution.vehicles)
-  vehicles_ordened = []
-
+  vehicles_ordened = {}
+  for v in range(len(solution.vehicles)):
+    vehicles_ordened[v] = sum([d.size for d in solution.vehicles[v].deliveries])
+  
   if sumVehicles <= minVehicles:
     return None, -1
   weak = vehicles_ordened[0]
