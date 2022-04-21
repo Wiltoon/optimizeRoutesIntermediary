@@ -1,9 +1,14 @@
 from .classes.types import *
 
-def limitVehicleTotal(instance, solution):
+def limitVehicleTotal(
+  instance: CVRPInstance, 
+  solution: CVRPSolution
+  ):
   MAX_ = instance.vehicle_capacity
   value = False
   minVehicles = sum([d.size for d in instance.deliveries])/MAX_
+  # print("AQUI :D")
+  # print(solution)
   sumVehicles = len(solution.vehicles)
   if sumVehicles >= minVehicles:
     return True

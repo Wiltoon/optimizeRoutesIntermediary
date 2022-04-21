@@ -1,4 +1,3 @@
-print("Hello")
 import json
 from dataclasses import dataclass, asdict
 from pathlib import Path

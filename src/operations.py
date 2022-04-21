@@ -3,17 +3,17 @@ from .computeDistances import *
 # Essa função deve decidir em qual rota vizinha o pacote (id_pack) deve ser inserido
 # e modificar o vehicles Possibles de como ficará as rotas
 def insertionPackInNeighborhood(
-    instance: CVRPInstance,
     vehiclesPossibles, 
     routes_neighs, 
     id_pack: int,
-    id_old_route: int
+    id_old_route: int,
+    matrix_distance
     ):
   best_values = []
   best_routes = []
   neighbors = list(dict.fromkeys(routes_neighs)) # neighbors retorna uma lista de rotas vizinhas sem repetição de rotas
   for id_route in neighbors:
-    route, min_value = insertPacketInRoute(instance, id_pack, vehiclesPossibles[id_route])
+    route, min_value = insertPacketInRoute(id_pack, vehiclesPossibles[id_route], matrix_distance)
     best_values.append(min_value) # calcula a distancia da melhor posição para o pacote ficar na rota
     best_routes.append(route)     # lista das rotas vizinhas construidas com o pacote
   id_b = best_values.index(min(best_values, key = float))
@@ -35,7 +35,7 @@ def createVehiclesPossibles(solution: CVRPSolution):
   vehiclesPossible = {}
   for v in range(len(solution.vehicles)):
     vehiclesPossible[v] = []
-    for d in v.deliveries:
+    for d in solution.vehicles[v].deliveries:
       vehiclesPossible[v].append(d.idu)
   return vehiclesPossible
 
@@ -47,27 +47,30 @@ def create_new_solution(
   id_old_route,
   id_new_route
   ):
-  print(vehiclesPossibles)
+  # print(vehiclesPossibles)
   vehiclesPossibles[id_old_route].remove(id_pack_modificated)
+  if len(vehiclesPossibles[id_old_route]) == 0:
+    vehiclesPossibles.pop(id_old_route, 404)
   vehiclesPossibles[id_new_route] = new_route
-  print("============ MODIFICATED ==========")
-  print(vehiclesPossibles)
-  print("-----------------------------------")
+  # print("============ MODIFICATED ==========")
+  # print(vehiclesPossibles)
+  # print("-----------------------------------")
 
 
 # Essa função deve avaliar determinado pacote em uma rota e qual o melhor resultado
 def insertPacketInRoute(
-    instance: CVRPInstance,
     id_pack, 
     route_select,
-    osrm_config: OSRMConfig):
+    matrix_distance):
   p_insertion = []
   for i in range(len(route_select)+1):
     route_aux = [el for el in route_select]
-    p_insertion.append(route_aux.insert(i, id_pack))
+    route_aux.insert(i, id_pack)
+    p_insertion.append(route_aux)
   scores = []
+  # print(p_insertion)
   for possible in p_insertion:
-    score = calculateDistanceRoute(instance, possible, osrm_config)
+    score = calculateDistanceRoute(matrix_distance, possible)
     scores.append(score)
   route = p_insertion[scores.index(min(scores, key = float))] # lista de pacotes arranjado da melhor forma
   return route, min(scores, key = float)
@@ -78,18 +81,23 @@ def selectVehicleWeak(instance, solution):
   minVehicles = sum([d.size for d in instance.deliveries])/MAX_
   sumVehicles = len(solution.vehicles)
   vehicles_ordened = {}
-  for v in range(len(solution.vehicles)):
-    vehicles_ordened[v] = sum([d.size for d in solution.vehicles[v].deliveries])
-  
   if sumVehicles <= minVehicles:
     return None, -1
-  weak = vehicles_ordened[0]
-  vehicleWeak = dictVehicles[weak]
-  sizeUsed = sum([d.size for d in vehicleWeak.deliveries])
-  if sizeUsed > 0.9*MAX_:
-    return None, -1
-  else:
-    return vehicleWeak, weak
+  for v in range(len(solution.vehicles)):
+    vehicles_ordened[v] = sum([d.size for d in solution.vehicles[v].deliveries])
+  for i in sorted(vehicles_ordened, key = vehicles_ordened.get):
+    sizeUsed = vehicles_ordened[i]
+    if sizeUsed > 0.9*MAX_:
+      return None, -1
+    else:
+      weak = i
+      vehicleWeak = solution.vehicles[weak].deliveries
+      # print("Vehicle Weak:")
+      # print(vehicleWeak)
+      # print("Index:")
+      # print(weak)
+      # print("=================")
+      return vehicleWeak, weak
 
 # Retorna um vetor com os indices dos veículos ordenados dado uma lista de veículos
 def sortedVehiclesPerChargeUsed(vehicles):
