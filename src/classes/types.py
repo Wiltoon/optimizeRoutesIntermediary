@@ -1,3 +1,4 @@
+print("Hello")
 import json
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -41,8 +42,6 @@ class Point:
 @dataclass(unsafe_hash=True)
 class Delivery:
     """A delivery request."""
-    idu: int
-    """Unique id numeric"""
 
     id: str
     """Unique id."""
@@ -52,6 +51,9 @@ class Delivery:
 
     size: int
     """Size it occupies in the vehicle (considered 1-D for simplicity)."""
+    
+    idu: int = 0
+    """Unique id numeric"""
 
 
 @dataclass

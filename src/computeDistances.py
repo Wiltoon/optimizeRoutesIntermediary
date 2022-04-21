@@ -1,8 +1,11 @@
 import requests
+from .classes.types import *
+from .classes.distances import *
 
 def calculateDistanceRoute(
     instance: CVRPInstance, 
-    possible # lista com pacotes de como sera atendido
+    possible, # lista com pacotes de como sera atendido
+    osrm_config: OSRMConfig
     ):
   # calcular a distancia percorrida pela rota desta forma
   points = []
@@ -13,7 +16,8 @@ def calculateDistanceRoute(
 
 def distance_osrm(
     p_origin: Delivery,
-    p_destiny: Delivery
+    p_destiny: Delivery,
+    osrm_config: OSRMConfig
 ):
   config = osrm_config
   points = []

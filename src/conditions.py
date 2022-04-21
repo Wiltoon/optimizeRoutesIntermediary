@@ -1,15 +1,18 @@
+from .classes.types import *
+
 def limitVehicleTotal(instance, solution):
-  MAX_ = instance.capacity
+  MAX_ = instance.vehicle_capacity
+  value = False
   minVehicles = sum([d.size for d in instance.deliveries])/MAX_
   sumVehicles = len(solution.vehicles)
-  if sumVehicles <= minVehicles:
-    return False
+  if sumVehicles >= minVehicles:
+    return True
   for v in solution.vehicles:
     sizeUsed = sum([d.size for d in v.deliveries])
-    if sizeUsed > 0.9*MAX_:
-      return False
-  else: 
-    return True
+    if sizeUsed < 0.9*MAX_:
+      value = True
+
+  return value
 
 def packetNotInRoute(id_pack, route):
   return id_pack not in route
@@ -21,7 +24,7 @@ def canAddPacket(
     ):
   # caso seja possivel inserir o pack_free no v returna True
   pack_free = instance.deliveries[id_pack]
-  MAX_ = instance.capacity
+  MAX_ = instance.vehicle_capacity
   totalSize = 0
   for i in route:
     p_neig = instance.deliveries[i]
