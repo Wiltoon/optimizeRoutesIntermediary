@@ -13,8 +13,11 @@ def reallocatePacksVehicle(
     osrm_config: OSRMConfig,
     T: int) -> CVRPSolution:
   index = 0
-  MAX_ = instance.vehicle_capacity
   # print("v =" + str(id_vehicle))
+  points = [d.point for d in instance.deliveries]
+  matrix_distance = calculate_distance_matrix_m(
+    points, osrm_config
+  )
   for pack_free in vehicle:
     neighs = {}
     packs_neigs = []
@@ -23,10 +26,6 @@ def reallocatePacksVehicle(
     index += 1 # cada vez pega outro pacote da rota fraca
     # Dicionario com chave: id delivery, valor: distancia do pacote atual ate outro pacote
     # Construir matrix distance
-    points = [d.point for d in instance.deliveries]
-    matrix_distance = calculate_distance_matrix_m(
-      points, osrm_config
-    )
     for i in range(len(instance.deliveries)):
       neighs[i] = matrix_distance[pack_free.idu][i]
     # Aqui temos um vetor ordenado de todos os pacotes proximos
@@ -49,12 +48,13 @@ def reallocatePacksVehicle(
         break
     # solução parcial em dict
     insertionPackInNeighborhood(
-        vehiclesPossibles, #id vehicle: [ids_packs]
-        routes_neighs, #ids das rotas vizinhas
-        id_pack,
-        id_vehicle,
-        matrix_distance
+      vehiclesPossibles, #id vehicle: [ids_packs]
+      routes_neighs, #ids das rotas vizinhas
+      id_pack,
+      id_vehicle,
+      matrix_distance
     )
+  # print(vehiclesPossibles)
   solution_partial = solutionJson(instance, vehiclesPossibles)
   return solution_partial
     

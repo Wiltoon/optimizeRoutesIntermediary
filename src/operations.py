@@ -70,7 +70,7 @@ def insertPacketInRoute(
   scores = []
   # print(p_insertion)
   for possible in p_insertion:
-    score = calculateDistanceRoute(matrix_distance, possible)
+    score = calculateDistanceRoute(matrix_distance, route_select, possible)
     scores.append(score)
   route = p_insertion[scores.index(min(scores, key = float))] # lista de pacotes arranjado da melhor forma
   return route, min(scores, key = float)
@@ -120,6 +120,7 @@ def solutionJson(
     vehicle = []
     for id_pack in v:
       vehicle.append(instance.deliveries[id_pack])
-    vehicles.append(vehicle)
+    vehicleConstruct = CVRPSolutionVehicle(origin=instance.origin, deliveries=vehicle)
+    vehicles.append(vehicleConstruct)
   solution = CVRPSolution(name=name, vehicles=vehicles)
   return solution

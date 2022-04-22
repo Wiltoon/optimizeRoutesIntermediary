@@ -4,15 +4,21 @@ from .classes.distances import *
 
 def calculateDistanceRoute(
     matrix_distance, 
+    old_possible,
     possible # lista com pacotes de como sera atendido
     ):
   # calcular a distancia percorrida pela rota desta forma
   points = []
-  distance = 0 
-  print(possible)
+  distanceOld = 0 
+  distanceNew = 0 
+  # print(possible)
+  for old in range(len(old_possible)-1):
+    dest = old + 1
+    distanceOld += matrix_distance[old][dest]
   for o in range(len(possible)-1):
     d = o + 1
-    distance += matrix_distance[o][d] 
+    distanceNew += matrix_distance[o][d]
+  distance = distanceNew - distanceOld
   # retorna a distancia percorrida pela rota
   return distance
 
