@@ -13,6 +13,9 @@ def recreate(names):
     for name in names:
         input = in_dir_path+name
         instance = CVRPInstance.from_file(input)
+        for i in range(len(instance.deliveries)):
+            instance.deliveries[i].idu = i
+        instance.to_file(input)
         packs = defaultdict(list)
         used = defaultdict(list)
         for idu in range(len(instance.deliveries)):

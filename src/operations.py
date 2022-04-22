@@ -16,16 +16,17 @@ def insertionPackInNeighborhood(
     route, min_value = insertPacketInRoute(id_pack, vehiclesPossibles[id_route], matrix_distance)
     best_values.append(min_value) # calcula a distancia da melhor posição para o pacote ficar na rota
     best_routes.append(route)     # lista das rotas vizinhas construidas com o pacote
-  id_b = best_values.index(min(best_values, key = float))
-  id_best_route = neighbors[id_b]
-  route_create = best_routes[id_b]
-  create_new_solution(
-    new_route = route_create,
-    vehiclesPossibles = vehiclesPossibles, # modificado
-    id_pack_modificated = id_pack, 
-    id_old_route = id_old_route,
-    id_new_route = id_best_route
-    ) # teoricamente o vehiclesPossibles precisa estar com a resposta final
+  if len(best_values) != 0:
+    id_b = best_values.index(min(best_values, key = float))
+    id_best_route = neighbors[id_b]
+    route_create = best_routes[id_b]
+    create_new_solution(
+      new_route = route_create,
+      vehiclesPossibles = vehiclesPossibles, # modificado
+      id_pack_modificated = id_pack, 
+      id_old_route = id_old_route,
+      id_new_route = id_best_route
+      ) # teoricamente o vehiclesPossibles precisa estar com a resposta final
 
 def createVehiclesPossibles(solution: CVRPSolution):
   #enumere as rotas da solution
@@ -119,7 +120,17 @@ def solutionJson(
   for k, v in vehiclesPossibles.items():
     vehicle = []
     for id_pack in v:
-      vehicle.append(instance.deliveries[id_pack])
+      point = Point(
+        lng=instance.deliveries[id_pack].point.lng, 
+        lat=instance.deliveries[id_pack].point.lat
+      )
+      delivery = Delivery(
+        id_pack,
+        point,
+        instance.deliveries[id_pack].size,
+        instance.deliveries[id_pack].idu
+      )
+      vehicle.append(delivery)
     vehicleConstruct = CVRPSolutionVehicle(origin=instance.origin, deliveries=vehicle)
     vehicles.append(vehicleConstruct)
   solution = CVRPSolution(name=name, vehicles=vehicles)
