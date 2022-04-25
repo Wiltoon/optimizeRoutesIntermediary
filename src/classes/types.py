@@ -42,7 +42,7 @@ class Point:
 class Delivery:
     """A delivery request."""
 
-    id: str
+    id: Union[str, int] 
     """Unique id."""
 
     point: Point
@@ -104,6 +104,12 @@ class CVRPSolutionVehicle:
     def circuit(self) -> List[Point]:
         return (
             [self.origin] + [d.point for d in self.deliveries] + [self.origin]
+        )
+
+    @property
+    def no_return(self) -> List[Point]:
+        return (
+            [self.origin] + [d.point for d in self.deliveries]
         )
 
     @property

@@ -1,7 +1,10 @@
+import copy
+
 from .computeDistances import * 
 from .conditions import *
 from .operations import *
 from .classes.types import *
+from .classes.task1 import *
 
 ## Essa função deve colocar os packets nos melhores vizinhos
 def reallocatePacksVehicle(
@@ -67,8 +70,9 @@ def rotineIntermediary(
     T: int # numero de pacotes próximos
   ) -> CVRPSolution:
   MAX_ = instance.vehicle_capacity
-  new_solution = solution
+  new_solution = copy.copy(solution)
   while limitVehicleTotal(instance, new_solution):
+    s = copy.copy(new_solution)
     vehicle, id_vehicle = selectVehicleWeak(instance, new_solution)
     vehiclesPossibles = createVehiclesPossibles(new_solution)
     route_weak = [d.idu for d in vehicle]
@@ -76,6 +80,21 @@ def rotineIntermediary(
         instance, vehicle, vehiclesPossibles, 
         route_weak, id_vehicle, osrm_config, T
     )
-    print(new_solution)
+    if isBetterThan(instance, s, new_solution, osrm_config):
+      break
+    print(len(vehiclesPossibles))
   return new_solution
   
+def isBetterThan(
+  instance: CVRPInstance,
+  solution: CVRPSolution, 
+  new_solution: CVRPSolution, 
+  osrm_config: OSRMConfig):
+  sol = evaluate_solution(instance, solution, osrm_config)
+  print(sol)
+  # sol = len(solution.deliveries)
+  n_sol = evaluate_solution(instance, new_solution, osrm_config)
+  print(n_sol)
+  # n_sol = len(new_solution.deliveries)
+  return sol >= n_sol
+

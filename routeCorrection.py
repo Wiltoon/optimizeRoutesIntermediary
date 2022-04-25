@@ -13,6 +13,7 @@ def main():
         for city in cities:
             for i in range(qtdInstances):
                 instanceName = "cvrp-0-"+city.split('-')[0]+"-"+str(i)+".json"
+                print("SOLUÇÃO =>" + instanceName)
                 solutionInitial = "resources/"+method+"/"+city+"/"+instanceName
                 path_instance = "inputs/"+city+"/"+instanceName
                 instance = CVRPInstance.from_file(path_instance)
