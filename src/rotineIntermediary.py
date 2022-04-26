@@ -13,14 +13,10 @@ def reallocatePacksVehicle(
     vehiclesPossibles, 
     route_weak,
     id_vehicle: int,
-    osrm_config: OSRMConfig,
+    matrix_distance,
     T: int) -> CVRPSolution:
   index = 0
   # print("v =" + str(id_vehicle))
-  points = [d.point for d in instance.deliveries]
-  matrix_distance = calculate_distance_matrix_m(
-    points, osrm_config
-  )
   for pack_free in vehicle:
     neighs = {}
     packs_neigs = []
@@ -71,14 +67,18 @@ def rotineIntermediary(
   ) -> CVRPSolution:
   MAX_ = instance.vehicle_capacity
   new_solution = copy.copy(solution)
+  points = [d.point for d in instance.deliveries]
+  matrix_distance = calculate_distance_matrix_m(
+    points, osrm_config
+  )
   while limitVehicleTotal(instance, new_solution):
     s = copy.copy(new_solution)
-    vehicle, id_vehicle = selectVehicleWeak(instance, new_solution)
+    vehicle, id_vehicle = selectVehicleWeak(instance, new_solution, matrix_distance)
     vehiclesPossibles = createVehiclesPossibles(new_solution)
     route_weak = [d.idu for d in vehicle]
     new_solution = reallocatePacksVehicle( # aqui deve ser feito a realocação dos pacotes da rota fraca
         instance, vehicle, vehiclesPossibles, 
-        route_weak, id_vehicle, osrm_config, T
+        route_weak, id_vehicle, matrix_distance, T
     )
     if isBetterThan(instance, s, new_solution, osrm_config):
       break
@@ -96,5 +96,5 @@ def isBetterThan(
   n_sol = evaluate_solution(instance, new_solution, osrm_config)
   print(n_sol)
   # n_sol = len(new_solution.deliveries)
-  return sol >= n_sol
+  return sol <= n_sol
 

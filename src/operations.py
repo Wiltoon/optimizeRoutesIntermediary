@@ -1,3 +1,4 @@
+from numpy import matrix
 from .classes.types import *
 from .computeDistances import *
 # Essa função deve decidir em qual rota vizinha o pacote (id_pack) deve ser inserido
@@ -77,7 +78,7 @@ def insertPacketInRoute(
   return route, min(scores, key = float)
 
 #retornar a rota do veículo de menor uso e seu id
-def selectVehicleWeak(instance, solution):
+def selectVehicleWeak(instance, solution, matrix_distance):
   MAX_ = instance.vehicle_capacity
   minVehicles = sum([d.size for d in instance.deliveries])/MAX_
   sumVehicles = len(solution.vehicles)
@@ -85,20 +86,34 @@ def selectVehicleWeak(instance, solution):
   if sumVehicles <= minVehicles:
     return None, -1
   for v in range(len(solution.vehicles)):
-    vehicles_ordened[v] = sum([d.size for d in solution.vehicles[v].deliveries])
-  for i in sorted(vehicles_ordened, key = vehicles_ordened.get):
-    sizeUsed = vehicles_ordened[i]
-    if sizeUsed > 0.9*MAX_:
-      return None, -1
-    else:
-      weak = i
-      vehicleWeak = solution.vehicles[weak].deliveries
-      # print("Vehicle Weak:")
+    vehicles_ordened[v] = densityDelivery(matrix_distance, solution, v)
+  sortedDict = sorted(vehicles_ordened.items(), key=lambda x: x[1], reverse=True)
+  weak = sortedDict[0][0]
+  vehicleWeak = solution.vehicles[weak].deliveries
+  return vehicleWeak, weak
+
+def densityDelivery(matrix_distance, solution, v: int):
+  distance_total = 0
+  total_deliveries = len(solution.vehicles[v].deliveries)
+  for o in range(total_deliveries-1):
+    d = o + 1
+    origin = solution.vehicles[v].deliveries[o].idu
+    destiny = solution.vehicles[v].deliveries[d].idu
+    distance_total += matrix_distance[origin][destiny]
+  return distance_total/total_deliveries
+
+  # for i in sorted(vehicles_ordened, key = vehicles_ordened.get):
+  #   sizeUsed = vehicles_ordened[i]
+  #   if sizeUsed > 0.5*MAX_:
+  #     return None, -1
+  #   else:
+  #     weak = i
+  #     vehicleWeak = solution.vehicles[weak].deliveries
+  #     # print("Vehicle Weak:")
       # print(vehicleWeak)
       # print("Index:")
       # print(weak)
       # print("=================")
-      return vehicleWeak, weak
 
 # Retorna um vetor com os indices dos veículos ordenados dado uma lista de veículos
 def sortedVehiclesPerChargeUsed(vehicles):
