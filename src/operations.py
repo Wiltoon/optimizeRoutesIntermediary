@@ -38,6 +38,11 @@ def createVehiclesPossibles(solution: CVRPSolution):
     vehiclesPossible[v] = []
     for d in solution.vehicles[v].deliveries:
       vehiclesPossible[v].append(d.idu)
+
+  for k, v in vehiclesPossible.items():
+    if len(vehiclesPossible[k]) >= 1:
+      vehiclesPossible[k].insert(0, 0)
+
   return vehiclesPossible
 
 # dado o dicionario transformar ele em resposta cvrp solution
@@ -48,11 +53,13 @@ def create_new_solution(
   id_old_route,
   id_new_route
   ):
-  # print(vehiclesPossibles)
-  vehiclesPossibles[id_old_route].remove(id_pack_modificated)
-  if len(vehiclesPossibles[id_old_route]) == 0:
+  # print("id rota = " + str(id_old_route))
+  # print("id pack mod = "+str(id_pack_modificated))
+  vehiclesPossibles[id_old_route].remove(id_pack_modificated-1)
+  if len(vehiclesPossibles[id_old_route]) <= 1:
     vehiclesPossibles.pop(id_old_route, 404)
   vehiclesPossibles[id_new_route] = new_route
+
   # print("============ MODIFICATED ==========")
   # print(vehiclesPossibles)
   # print("-----------------------------------")
