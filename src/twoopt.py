@@ -24,5 +24,3 @@ def twoOpt(current_tour, matrix_distance):
                 if betterTour(new_tour, best_tour, matrix_distance):
                     best_tour = new_tour
     return best_tour
-
-def solve(current_tour, matrix_distance):
