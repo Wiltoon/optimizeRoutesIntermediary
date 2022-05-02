@@ -13,7 +13,13 @@ def insertionPackInNeighborhood(
   best_routes = []
   neighbors = list(dict.fromkeys(routes_neighs)) # neighbors retorna uma lista de rotas vizinhas sem repetição de rotas
   for id_route in neighbors:
-    route, min_value = insertPacketInRoute(id_pack, vehiclesPossibles[id_route], matrix_distance)
+    # print(id_route)
+    # print("Pack = "+ str(id_pack))
+    route, min_value = insertPacketInRoute(
+      id_pack, 
+      vehiclesPossibles[id_route], 
+      matrix_distance
+    )
     best_values.append(min_value) # calcula a distancia da melhor posição para o pacote ficar na rota
     best_routes.append(route)     # lista das rotas vizinhas construidas com o pacote
   if len(best_values) != 0:
@@ -54,32 +60,37 @@ def create_new_solution(
   id_new_route
   ):
   # print("id rota = " + str(id_old_route))
+  # print("id nova rota = " + str(id_new_route))
   # print("id pack mod = "+str(id_pack_modificated))
   vehiclesPossibles[id_old_route].remove(id_pack_modificated-1)
   if len(vehiclesPossibles[id_old_route]) <= 1:
     vehiclesPossibles.pop(id_old_route, 404)
   vehiclesPossibles[id_new_route] = new_route
 
-  # print("============ MODIFICATED ==========")
-  # print(vehiclesPossibles)
-  # print("-----------------------------------")
+  print("============ MODIFICATED ==========")
+  print(vehiclesPossibles)
+  print("-----------------------------------")
 
 
 # Essa função deve avaliar determinado pacote em uma rota e qual o melhor resultado
 def insertPacketInRoute(
-    id_pack, 
-    route_select,
+    id_pack, # 153
+    route_select, # saber qual o id dos packs dessa rota 
     matrix_distance):
   p_insertion = []
-  for i in range(len(route_select)+1):
+  # print("Route list = ")
+  # print(route_select)
+  for i in range(1,len(route_select)+1):
     route_aux = [el for el in route_select]
-    route_aux.insert(i, id_pack)
+    route_aux.insert(i, id_pack-1)
     p_insertion.append(route_aux)
   scores = []
   # print(p_insertion)
   for possible in p_insertion:
     score = calculateDistanceRoute(matrix_distance, route_select, possible)
     scores.append(score)
+  # print("Minimo")
+  # print(p_insertion[scores.index(min(scores, key = float))])
   route = p_insertion[scores.index(min(scores, key = float))] # lista de pacotes arranjado da melhor forma
   return route, min(scores, key = float)
 
@@ -126,18 +137,23 @@ def solutionJson(
   vehicles = []
   for k, v in vehiclesPossibles.items():
     vehicle = []
+    dep = 0
     for id_pack in v:
-      point = Point(
-        lng=instance.deliveries[id_pack].point.lng, 
-        lat=instance.deliveries[id_pack].point.lat
-      )
-      delivery = Delivery(
-        id_pack,
-        point,
-        instance.deliveries[id_pack].size,
-        instance.deliveries[id_pack].idu
-      )
-      vehicle.append(delivery)
+      if dep == 0:
+        dep += 1
+        continue
+      else:
+        point = Point(
+          lng=instance.deliveries[id_pack].point.lng, 
+          lat=instance.deliveries[id_pack].point.lat
+        )
+        delivery = Delivery(
+          id_pack,
+          point,
+          instance.deliveries[id_pack].size,
+          instance.deliveries[id_pack].idu
+        )
+        vehicle.append(delivery)
     vehicleConstruct = CVRPSolutionVehicle(origin=instance.origin, deliveries=vehicle)
     vehicles.append(vehicleConstruct)
   solution = CVRPSolution(name=name, vehicles=vehicles)

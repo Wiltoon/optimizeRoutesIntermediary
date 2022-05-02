@@ -20,7 +20,7 @@ def reallocatePacksVehicle(
     T: int) -> CVRPSolution:
 
   index = 1
-  # print(route_weak)
+  # print(len(instance.deliveries))
   # print(route_weak)
   for pack_free in vehicle:
     # print(pack_free)
@@ -45,6 +45,7 @@ def reallocatePacksVehicle(
           if k == id_vehicle:
             continue
           if canAddPacket(id_pack, v, instance):
+            # print(k, v)
             routes_neighs.append(k)
             auxT += 1
       else:
@@ -72,6 +73,7 @@ def rotineIntermediary(
   origin = [instance.origin]
   deliveries = [d.point for d in instance.deliveries]
   points = [*origin, *deliveries]
+  # print(len(points))
   matrix_distance = calculate_distance_matrix_m(
     points, osrm_config
   )
@@ -79,10 +81,6 @@ def rotineIntermediary(
   psolution = solutionJson(instance, vehP)
   sol = calculateSolutionMatrix(psolution, matrix_distance)
   new_solution = copy.copy(solution)
-  points = [d.point for d in instance.deliveries]
-  matrix_distance = calculate_distance_matrix_m(
-    points, osrm_config
-  )
   while limitVehicleTotal(instance, new_solution):
     s = copy.copy(new_solution)
     vehicle, id_vehicle = selectVehicleWeak(instance, new_solution)

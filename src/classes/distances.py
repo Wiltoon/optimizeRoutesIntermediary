@@ -34,7 +34,7 @@ def calculate_distance_matrix_m(
     )
 
     response.raise_for_status()
-
+    print(len(response.json()["distances"]))
     return np.array(response.json()["distances"])
 
 

@@ -6,7 +6,7 @@ def generateOutJson(solution: CVRPSolution, out_path: str):
     solution.to_file(out_path)
 
 def recreate(names):
-    method = "kpprrf"
+    method = "lkh3"
     city = "pa-0"
     in_dir_path = "inputs/"+city+"/"
     out_dir = "resources/"+method+"/"+city+"/"
