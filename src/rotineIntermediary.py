@@ -1,13 +1,8 @@
 import copy
 from itertools import combinations
 
-<<<<<<< HEAD
 from .twoopt import *
-=======
 from .interRoute import twoOptStar
-
-from .twoOpt import *
->>>>>>> dc7184286f98a6db5932631765060aa08c94829f
 from .computeDistances import * 
 from .conditions import *
 from .operations import *
@@ -23,14 +18,10 @@ def reallocatePacksVehicle(
     id_vehicle: int,
     matrix_distance,
     T: int) -> CVRPSolution:
-<<<<<<< HEAD
-  index = 0
-  # print("v =" + str(id_vehicle))
-=======
+
   index = 1
   # print(route_weak)
   # print(route_weak)
->>>>>>> dc7184286f98a6db5932631765060aa08c94829f
   for pack_free in vehicle:
     # print(pack_free)
     neighs = {}
@@ -104,14 +95,7 @@ def rotineIntermediary(
     )
     if isBetterThan(instance, s, new_solution, osrm_config, matrix_distance):
       break
-<<<<<<< HEAD
-  for k, v in vehiclesPossibles:
-    vehiclesPossibles[k] = twoOpt(
-      current_tour=v,
-      matrix_distance=matrix_distance
-    )
-  new_solution = solutionJson(instance, vehiclesPossibles)
-=======
+
     print("Numero de veículos utilizados = "+ str(len(vehiclesPossibles)))
   allin = [f for f in range(len(vehiclesPossibles))]
   combs = [p for p in list(combinations(allin,2))]
@@ -131,7 +115,6 @@ def rotineIntermediary(
   sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
   print(sol2)
   print("Solução inicial = "+ str(sol))
->>>>>>> dc7184286f98a6db5932631765060aa08c94829f
   return new_solution
   
 def isBetterThan(
