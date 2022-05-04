@@ -51,8 +51,6 @@ def computeCompensationSwap(md, route1, route2, p1, p2):
     return gainSwap, loseSwap
 
 def twoOptStar(route1, route2, md, instance):
-    # print(route1)
-    # print(route2)
     for p1 in range(1,len(route1)):
         for p2 in range(1,len(route2)):
             if swapPossible(instance, route1, route2, p1, p2):
