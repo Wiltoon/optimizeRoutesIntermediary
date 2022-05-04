@@ -91,7 +91,7 @@ def rotineIntermediary(
         instance, vehicle, vehiclesPossibles, 
         route_weak, id_vehicle, matrix_distance, T
     )
-    if isBetterThan(instance, s, new_solution, osrm_config, matrix_distance):
+    if isBetterThan(s, new_solution):
       break
 
     print("Numero de veículos utilizados = "+ str(len(vehiclesPossibles)))
@@ -118,22 +118,11 @@ def rotineIntermediary(
   return new_solution
   
 def isBetterThan(
-  instance: CVRPInstance,
   solution: CVRPSolution, 
-  new_solution: CVRPSolution, 
-  osrm_config: OSRMConfig,
-  matrix_distance):
-  # sol = evaluate_solution(instance, solution, osrm_config)
-  # print(sol)
-  # sol2 = calculateSolutionMatrix(solution, matrix_distance)
-  # print("Pela Matrix = " + str(sol2))
-  # print("DIFF OSRM = " + str(sol2-sol))
-  # route_distances_m = calculateSolutionMatrix(new_solution, matrix_distance)
-  # print("Pela Nova Matrix = " + str(route_distances_m))
+  new_solution: CVRPSolution):
   sol = len(solution.vehicles)
-  print(sol)
-  # n_sol = evaluate_solution(instance, new_solution, osrm_config)
+  # print(sol)
   n_sol = len(new_solution.vehicles)
-  print(n_sol)
+  # print(n_sol)
   return sol <= n_sol
 

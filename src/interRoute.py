@@ -64,5 +64,52 @@ def twoOptStar(route1, route2, md, instance):
                     new_route2.insert(p2, route1[p1])
                     route1 = new_route1.copy()
                     route2 = new_route2.copy()
+    return route1, route2
+
+def constructPossiblesSolutions(md, route1, route2, p1, p2):
+    # retornar todas as 2 possiveis rotas finais com o valor de perda e de ganho
+    #   possibles: [{
+    #       route1: [],
+    #       route2: [],
+    #       gain: XX,
+    #       lose: YY,
+    #       select: destiny_pack1 (1|2), destiny_pack2 (1|2)
+    #   }, ...]
+    # }
+    possibles = {}
+    return possibles
+
+def selectBestSolutions(possibles):
+    return possibles[0]
+
+def twoOptStarModificated(route1, route2, md, instance):
+    # print(route1)
+    # print(route2)
+    p1, p2 = 0, 0
+    while p1 < len(route1):
+        while p2 < len(route2):
+            possibles_solutions = constructPossiblesSolutions(md, route1, route2, p1, p2)
+            best_solution = selectBestSolutions(possibles_solutions)
+            route1, route2 = best_solution['route1'], best_solution['route2']
+            if best_solution['select'][0] != best_solution['select'][1]:
+                p1 += 1
+                p2 += 1
+            else:
+                if best_solution['select'][0] == 1:
+                    p1 += 1
+                else:
+                    p2 += 1
+
+    for p1 in range(1,len(route1)):
+        for p2 in range(1,len(route2)):
+            if swapPossible(instance, route1, route2, p1, p2):
+                gainSwap, loseSwap = computeCompensationSwap(md, route1, route2, p1, p2)
+                if loseSwap > gainSwap:
+                    new_route1 = [route1[i] for i in range(len(route1)) if i != p1]
+                    new_route1.insert(p1, route2[p2])
+                    new_route2 = [route2[j] for j in range(len(route2)) if j != p2]
+                    new_route2.insert(p2, route1[p1])
+                    route1 = new_route1.copy()
+                    route2 = new_route2.copy()
                 
     return route1, route2
