@@ -6,7 +6,7 @@ def main():
     osrm_config = OSRMConfig(
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
-    methods = ["lkh3"]
+    methods = ["kpprrf"]
     cities = ["pa-0"]
     qtdInstances = 1
     for method in methods:

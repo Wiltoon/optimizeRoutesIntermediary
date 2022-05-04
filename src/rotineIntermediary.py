@@ -1,7 +1,7 @@
 import copy
 from itertools import combinations
 
-from .twoopt import *
+from .twoOpt import *
 from .interRoute import twoOptStar
 from .computeDistances import * 
 from .conditions import *
@@ -99,19 +99,21 @@ def rotineIntermediary(
   combs = [p for p in list(combinations(allin,2))]
   sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
   print(sol2)
-  for comb in combs:
-    vehiclesPossibles[comb[0]], vehiclesPossibles[comb[1]] = twoOptStar(
-      vehiclesPossibles[comb[0]],
-      vehiclesPossibles[comb[1]],
-      matrix_distance
-    )
+  for _ in range(5):
+    for comb in combs:
+      vehiclesPossibles[comb[0]], vehiclesPossibles[comb[1]] = twoOptStar(
+        vehiclesPossibles[comb[0]],
+        vehiclesPossibles[comb[1]],
+        matrix_distance,
+        instance
+      )
   new_solution = solutionJson(instance, vehiclesPossibles)
   sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
   print(sol2)
-  for k, v in vehiclesPossibles.items():
-    vehiclesPossibles[k] = twoOpt(current_tour=v,matrix_distance=matrix_distance)
-  sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
-  print(sol2)
+  # for k, v in vehiclesPossibles.items():
+  #   vehiclesPossibles[k] = twoOpt(current_tour=v,matrix_distance=matrix_distance)
+  # sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
+  # print(sol2)
   print("Solução inicial = "+ str(sol))
   return new_solution
   

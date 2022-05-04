@@ -106,7 +106,7 @@ def selectVehicleWeak(instance, solution):
     vehicles_ordened[v] = sum([d.size for d in solution.vehicles[v].deliveries])
   for i in sorted(vehicles_ordened, key = vehicles_ordened.get):
     sizeUsed = vehicles_ordened[i]
-    if sizeUsed > 0.9*MAX_:
+    if sizeUsed > 0.85*MAX_:
       return None, -1
     else:
       weak = i
