@@ -125,3 +125,10 @@ class CVRPSolution(JSONDataclassMixin):
     @property
     def deliveries(self):
         return [d for v in self.vehicles for d in v.deliveries]
+
+@dataclass
+class RoutePossible(JSONDataclassMixin):
+    route1: list 
+    route2: list
+    gain: float
+    select: list[int]
