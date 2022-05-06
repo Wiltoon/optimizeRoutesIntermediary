@@ -106,15 +106,42 @@ def swapPacks(
         return None
     return possibleSwap
 
-def compensationInsertInRoute(md, instance, r1, r2, p_insert):
-    # pacote da posição p_insert do r2 está indo para o r1
+def compensationInsertInRoute(
+    md, instance, 
+    rd, ro, 
+    p_insert, # 152 -> 153 
+    i_destiny
+    ):
+    # pacote da posição p_insert do ro está indo para o rd
+    # ro[p_insert] -> rd[p_destiny]
     gainDistanceTotal = 0
+    lose = 0
+    gain = 0
+    if i_destiny != len(rd): # ultimo elemento não tem perda
+        # lose : 
+        #       r1[p_destiny-1] -> r1[p_destiny]
+        # gain : 
+        #       r1[p_destiny-1] -> r2[p_insert]
+        if i_destiny == 1:
+            lose += md[rd[i_destiny-1]][rd[i_destiny]+1]
+            gain += md[rd[i_destiny-1]][ro[p_insert]+1]
+        else:
+            lose += md[rd[i_destiny-1]+1][rd[i_destiny]+1]
+            gain += md[rd[i_destiny-1]+1][ro[p_insert]+1]
+    else:
+        #   r2[p_insert] -> r1[p_destiny+1] se existir
+        if i_destiny == 1:
+            gain += md[rd[i_destiny-1]][ro[p_insert]+1]
+        else:
+            gain += md[rd[i_destiny-1]+1][ro[p_insert]+1]
+        gain += md[ro[p_insert]+1][rd[i_destiny+1]+1]
+    gainDistanceTotal = lose - gain
     return gainDistanceTotal
 
 def insertBothInRoute(
     md, instance, 
     r1, r2, 
-    p_insert, selected: int):
+    i_insert, selected: int):
     # r1 é onde o p_insert será inserido
     # para inserção do p_insert é necessário verificar onde ele deve ficar 
     # depois do deposito
@@ -126,13 +153,15 @@ def insertBothInRoute(
     # [0, 1, 2, r2[p_insert], 3, 4]
     # [0, 1, 2, 3, r2[p_insert], 4]
     # [0, 1, 2, 3, 4, r2[p_insert]]
-    lose = 4# custo de remover elemento da r2
+    removePack = 0                  # custo de remover elemento da r2
+
     possibles = []
     gains = []
     for i in range(1,len(r1)+1):
-        new_route1 = r1.insert(i, r2[p_insert])
-        gain = compensationInsertInRoute(md, instance, r1, r2, p_insert)
-        possibles.append()
+        new_route1 = r1.insert(i, r2[i_insert])
+        gain = compensationInsertInRoute(md, instance, r1, r2, r2[i_insert], i)
+        new_route2 = [] # remover o r2[p_insert]
+        possibles.append(poss)
     select = [selected, selected]
     possibleInsert = RoutePossible()
     return possibleInsert
@@ -153,9 +182,8 @@ def constructPossiblesSolutions(
     swap = swapPacks(md, instance, route1, route2, p1, p2)
     if swap != None:
         possibles.append(swap)
-    
-    possible = insertBothInRoute1()
-    possible = insertBothInRoute2()
+    possibleRoute1 = insertBothInRoute(md, instance, route1, route2, p2, 1) # p2 -> route1
+    possibleRoute2 = insertBothInRoute(md, instance, route2, route1, p1, 1) # p1 -> route2
     return possibles
 
 def selectBestSolutions(possibles):
