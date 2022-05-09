@@ -128,7 +128,7 @@ class CVRPSolution(JSONDataclassMixin):
 
 @dataclass
 class RoutePossible(JSONDataclassMixin):
-    route1: list 
-    route2: list
+    route1: list[int]
+    route2: list[int]
     gain: float
     select: list[int]
