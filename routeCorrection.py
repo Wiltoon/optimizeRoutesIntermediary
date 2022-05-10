@@ -21,7 +21,6 @@ def main():
                 new_solution = rotineIntermediary(instance, solution, osrm_config, T)
                 new_solution.to_file("out/"+method+"/"+city+"/"+instanceName)
                 # compareSolutions(instance, solution, new_solution)
-                
 
 if __name__ == '__main__':
    main()
