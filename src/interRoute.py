@@ -176,7 +176,7 @@ def compensationRemoveInRoute(
             lose += md[ro[i_remove-1]+1][ro[i_remove]+1]
     return round((lose - gain)/1_000,3)
 
-def selectPossible(possibles: list[RoutePossible]):
+def selectPossible(possibles: List[RoutePossible]):
     selected = None
     value_s = 0
     for possible in possibles:

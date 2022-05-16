@@ -1,5 +1,6 @@
 import copy
 from itertools import combinations
+import time
 
 from .twoopt import *
 from .interRoute import *
@@ -68,7 +69,8 @@ def rotineIntermediary(
     instance: CVRPInstance,
     solution: CVRPSolution,
     osrm_config: OSRMConfig,
-    T: int # numero de pacotes próximos
+    T: int, # numero de pacotes próximos
+    city: str
   ) -> CVRPSolution:
   origin = [instance.origin]
   deliveries = [d.point for d in instance.deliveries]
@@ -81,12 +83,13 @@ def rotineIntermediary(
   psolution = solutionJson(instance, vehP)
   sol = calculateSolutionMatrix(psolution, matrix_distance)
   new_solution = copy.copy(solution)
+  start_t = time.time()
   while limitVehicleTotal(instance, new_solution):
     s = copy.copy(new_solution)
     vehicle, id_vehicle = selectVehicleWeak(instance, new_solution)
     vehiclesPossibles = createVehiclesPossibles(new_solution)
     if vehicle != None:
-      print("Numero de veículos utilizados = "+ str(len(vehiclesPossibles)))
+      # print("Numero de veículos utilizados = "+ str(len(vehiclesPossibles)))
       route_weak = [d.idu+1 for d in vehicle]
       route_weak.insert(0,0)
       new_solution = reallocatePacksVehicle( # aqui deve ser feito a realocação dos pacotes da rota fraca
@@ -97,11 +100,20 @@ def rotineIntermediary(
         break
     else:
       break
-
+  finish_t = time.time()
+  time_t = finish_t - start_t
+  fileNamePath = "out/krs/"+city+"/"+instance.name+".json"
+  new_solution_t = solutionJsonWithTime(
+    time_t, 
+    instance, 
+    vehiclesPossibles, 
+    fileNamePath
+  )
   allin = [f for f in range(len(vehiclesPossibles))]
   combs = [p for p in list(combinations(allin,2))]
-  sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
-  print(sol2)
+  # sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
+  # print(sol2)
+  start_time_opts = time.time()
   for i in range(10):
     for comb in combs:
       vehiclesPossibles[comb[0]], vehiclesPossibles[comb[1]] = twoOptStar(
@@ -111,8 +123,8 @@ def rotineIntermediary(
         instance
       )
     new_solution = solutionJson(instance, vehiclesPossibles)
-    sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
-    print(sol2)
+    # sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
+    # print(sol2)
     for comb in combs:
       vehiclesPossibles[comb[0]], vehiclesPossibles[comb[1]] = twoOptStarModificated(
         vehiclesPossibles[comb[0]],
@@ -121,13 +133,21 @@ def rotineIntermediary(
         instance
       )
     new_solution = solutionJson(instance, vehiclesPossibles)
-    sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
-    print("star mod "+str(i)+" = "+str(sol2))
+    # sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
+    # print("star mod "+str(i)+" = "+str(sol2))
+  finish_time_opts = time.time()
+  time_exec = finish_time_opts - start_time_opts
+  fileNamePath = "out/krso/"+city+"/"+instance.name+".json"
+  new_solution_t = solutionJsonWithTime(
+    time_exec, 
+    instance, 
+    vehiclesPossibles, 
+    fileNamePath
+  )
   # for k, v in vehiclesPossibles.items():
   #   vehiclesPossibles[k] = twoOpt(current_tour=v,matrix_distance=matrix_distance)
   # sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
   # print(sol2)
-  print("Solução inicial = "+ str(sol))
   return new_solution
   
 def isBetterThan(

@@ -121,6 +121,15 @@ class CVRPSolutionVehicle:
 class CVRPSolution(JSONDataclassMixin):
     name: str
     vehicles: List[CVRPSolutionVehicle]
+    
+    @property
+    def deliveries(self):
+        return [d for v in self.vehicles for d in v.deliveries]
+@dataclass
+class CVRPSolutionOpt(JSONDataclassMixin):
+    name: str
+    vehicles: List[CVRPSolutionVehicle]
+    time_exec: float
 
     @property
     def deliveries(self):
@@ -128,7 +137,7 @@ class CVRPSolution(JSONDataclassMixin):
 
 @dataclass
 class RoutePossible(JSONDataclassMixin):
-    route1: list[int]
-    route2: list[int]
+    route1: List[int]
+    route2: List[int]
     gain: float
-    select: list[int]
+    select: List[int]

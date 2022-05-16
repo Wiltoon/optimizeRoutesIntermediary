@@ -67,9 +67,9 @@ def create_new_solution(
     vehiclesPossibles.pop(id_old_route, 404)
   vehiclesPossibles[id_new_route] = new_route
 
-  print("============ MODIFICATED ==========")
-  print(vehiclesPossibles)
-  print("-----------------------------------")
+  # print("============ MODIFICATED ==========")
+  # print(vehiclesPossibles)
+  # print("-----------------------------------")
 
 
 # Essa função deve avaliar determinado pacote em uma rota e qual o melhor resultado
@@ -157,4 +157,37 @@ def solutionJson(
     vehicleConstruct = CVRPSolutionVehicle(origin=instance.origin, deliveries=vehicle)
     vehicles.append(vehicleConstruct)
   solution = CVRPSolution(name=name, vehicles=vehicles)
+  return solution
+
+def solutionJsonWithTime(
+  time_exec: float,
+  instance: CVRPInstance, 
+  vehiclesPossibles,
+  namePathSolution
+  )-> CVRPSolutionOpt:
+  name = instance.name
+  vehicles = []
+  for k, v in vehiclesPossibles.items():
+    vehicle = []
+    dep = 0
+    for id_pack in v:
+      if dep == 0:
+        dep += 1
+        continue
+      else:
+        point = Point(
+          lng=instance.deliveries[id_pack].point.lng, 
+          lat=instance.deliveries[id_pack].point.lat
+        )
+        delivery = Delivery(
+          id_pack,
+          point,
+          instance.deliveries[id_pack].size,
+          instance.deliveries[id_pack].idu
+        )
+        vehicle.append(delivery)
+    vehicleConstruct = CVRPSolutionVehicle(origin=instance.origin, deliveries=vehicle)
+    vehicles.append(vehicleConstruct)
+  solution = CVRPSolutionOpt(name=name, vehicles=vehicles, time_exec = time_exec)
+  solution.to_file(namePathSolution)
   return solution
