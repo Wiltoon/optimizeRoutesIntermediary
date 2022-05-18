@@ -7,8 +7,8 @@ def main():
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
     methods = ["kpprrf"]
-    cities = ["pa-0", "rj-0", "df-0"]
-    qtdInstances = 30
+    cities = ["pa-0"]
+    qtdInstances = 1
     for method in methods:
         for city in cities:
             for i in range(90,90+qtdInstances):
@@ -18,7 +18,7 @@ def main():
                 path_instance = "inputs/"+city+"/"+instanceName
                 try:
                     instance = CVRPInstance.from_file(path_instance)
-                    solution = CVRPSolution.from_file(solutionInitial)
+                    solution = CVRPSolutionKpprrf.from_file(solutionInitial)
                     new_solution = rotineIntermediary(instance, solution, osrm_config, T, city)
                 except Exception as ex:
                     print(ex)

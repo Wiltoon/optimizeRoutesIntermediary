@@ -19,6 +19,25 @@ def limitVehicleTotal(
 
   return value
 
+def limitVehicleTotal(
+  instance: CVRPInstance, 
+  solution: CVRPSolutionKpprrf
+  ):
+  MAX_ = instance.vehicle_capacity
+  value = False
+  minVehicles = sum([d.size for d in instance.deliveries])/MAX_
+  # print("AQUI :D")
+  # print(solution)
+  sumVehicles = len(solution.vehicles)
+  if sumVehicles >= minVehicles:
+    return True
+  for v in solution.vehicles:
+    sizeUsed = sum([d.size for d in v.deliveries])
+    if sizeUsed < 0.9*MAX_:
+      value = True
+
+  return value
+
 def packetNotInRoute(id_pack, route):
   return id_pack not in route
 

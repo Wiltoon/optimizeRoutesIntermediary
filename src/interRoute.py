@@ -246,9 +246,7 @@ def constructPossiblesSolutions(
     return possibles
 
 def twoOptStarModificated(route1, route2, md, instance):
-    # print(route1)
-    # print(route2)
-    p1, p2 = 0, 0
+    p1, p2 = 1, 1
     while p1 < len(route1) and p2 < len(route2):
         # print(p1,p2)
         possibles_solutions = constructPossiblesSolutions(
@@ -258,7 +256,10 @@ def twoOptStarModificated(route1, route2, md, instance):
         best_solution = selectPossible(possibles_solutions)
         if best_solution != None:
             # print(best_solution.gain)
-            route1, route2 = best_solution.route1.copy(), best_solution.route2.copy()
+            # print("ANTES")
+            # print(route1)
+            # print(route2)
+            route1, route2  = best_solution.route1.copy(), best_solution.route2.copy()
             if best_solution.select[0] != best_solution.select[1]:
                 p1 += 1
                 p2 += 1
@@ -267,8 +268,11 @@ def twoOptStarModificated(route1, route2, md, instance):
                     p1 += 1
                 else:
                     p2 += 1
+            # print("DEPOIS")
+            # print(route1)
+            # print(route2)  
         else:
             p1 += 1
             p2 += 1
-                
+              
     return route1, route2

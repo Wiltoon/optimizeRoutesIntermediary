@@ -51,6 +51,23 @@ def createVehiclesPossibles(solution: CVRPSolution):
 
   return vehiclesPossible
 
+def createVehiclesPossibles(solution: CVRPSolutionKpprrf):
+  #enumere as rotas da solution
+  #enumere os pacotes 
+  #chave id_route 
+  #valor [id_packs]
+  vehiclesPossible = {}
+  for v in range(len(solution.vehicles)):
+    vehiclesPossible[v] = []
+    for d in solution.vehicles[v].deliveries:
+      vehiclesPossible[v].append(d.idu)
+
+  for k, v in vehiclesPossible.items():
+    if len(vehiclesPossible[k]) >= 1:
+      vehiclesPossible[k].insert(0, 0)
+
+  return vehiclesPossible
+
 # dado o dicionario transformar ele em resposta cvrp solution
 def create_new_solution(
   new_route,
@@ -111,11 +128,6 @@ def selectVehicleWeak(instance, solution):
     else:
       weak = i
       vehicleWeak = solution.vehicles[weak].deliveries
-      # print("Vehicle Weak:")
-      # print(vehicleWeak)
-      # print("Index:")
-      # print(weak)
-      # print("=================")
       return vehicleWeak, weak
 
 # Retorna um vetor com os indices dos veículos ordenados dado uma lista de veículos
@@ -133,6 +145,36 @@ def solutionJson(
   instance: CVRPInstance, 
   vehiclesPossibles
   )-> CVRPSolution:
+  name = instance.name
+  vehicles = []
+  for k, v in vehiclesPossibles.items():
+    vehicle = []
+    dep = 0
+    for id_pack in v:
+      if dep == 0:
+        dep += 1
+        continue
+      else:
+        point = Point(
+          lng=instance.deliveries[id_pack].point.lng, 
+          lat=instance.deliveries[id_pack].point.lat
+        )
+        delivery = Delivery(
+          id_pack,
+          point,
+          instance.deliveries[id_pack].size,
+          instance.deliveries[id_pack].idu
+        )
+        vehicle.append(delivery)
+    vehicleConstruct = CVRPSolutionVehicle(origin=instance.origin, deliveries=vehicle)
+    vehicles.append(vehicleConstruct)
+  solution = CVRPSolution(name=name, vehicles=vehicles)
+  return solution
+  
+def solutionJson(
+  instance: CVRPInstance, 
+  vehiclesPossibles
+  )-> CVRPSolutionKpprrf:
   name = instance.name
   vehicles = []
   for k, v in vehiclesPossibles.items():
