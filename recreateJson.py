@@ -32,6 +32,16 @@ def recreate(names):
                         used[d.id][u] = True
                         d.idu = packs[d.id][u]
                         break
+        new_vehicles = []
+        for v in solution.vehicles:
+            new_deliveries = []
+            for d in v.deliveries:
+                if d.id != "DEPOSITO":
+                    new_deliveries.append(d)
+            ori = v.origin
+            new_tour = CVRPSolutionVehicle(origin=ori, deliveries=new_deliveries)
+            new_vehicles.append(new_tour)
+        solution.vehicles = new_vehicles
         generateOutJson(solution, out)
 
 if __name__ == '__main__':
