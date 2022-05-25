@@ -7,8 +7,8 @@ def main():
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
     methods = ["kpprrf"]
-    cities = ["pa-0"]
-    qtdInstances = 1
+    cities = ["df-0", "rj-0"]
+    qtdInstances = 30
     for method in methods:
         for city in cities:
             for i in range(90,90+qtdInstances):

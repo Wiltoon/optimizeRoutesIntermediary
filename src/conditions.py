@@ -53,6 +53,5 @@ def canAddPacket(
   for i in route:
     p_neig = instance.deliveries[i]
     totalSize += p_neig.size
-  totalSize += pack_free.size
-  return totalSize <= MAX_ and packetNotInRoute(id_pack, route)
+  return totalSize + pack_free.size <= MAX_ and packetNotInRoute(id_pack, route)
 

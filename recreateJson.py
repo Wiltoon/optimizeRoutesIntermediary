@@ -31,6 +31,16 @@ def recreate(names, city, method):
                             used[d.id][u] = True
                             d.idu = packs[d.id][u]
                             break
+            new_vehicles = []
+            for v in solution.vehicles:
+                new_deliveries = []
+                for d in v.deliveries:
+                    if d.id != "DEPOSITO":
+                        new_deliveries.append(d)
+                ori = v.origin
+                new_tour = CVRPSolutionVehicle(origin=ori, deliveries=new_deliveries)
+                new_vehicles.append(new_tour)
+            solution.vehicles = new_vehicles
             generateOutJson(solution, out)
         except Exception as e:
             print(e)
@@ -38,8 +48,8 @@ def recreate(names, city, method):
 
 if __name__ == '__main__':
     method = "kpprrf"
-    numDays = 2
-    city = "pa-0"
+    numDays = 30
+    city = "df-0"
     instances = []
     for i in range(90, 90+numDays):
         instance = "cvrp-0-"+city.split('-')[0]+"-"+str(i)+".json"
