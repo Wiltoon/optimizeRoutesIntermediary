@@ -233,3 +233,26 @@ def solutionJsonWithTime(
   solution = CVRPSolutionOpt(name=name, vehicles=vehicles, time_exec = time_exec)
   solution.to_file(namePathSolution)
   return solution
+
+def reduceVehicles(instance, vehiclesPossibles, matrix_distance):
+  # reduzir o numero de veiculos
+  # acabar com os veiculos vazios
+  # selecionar um veiculo fraco (por capacidade ou por distancia/packet)
+  # destruir a rota existente
+  # criar lista de pacotes não vizitados (pacotes do veiculo fraco)
+  # percorrer os pacotes não vizitados
+  # selecionar rotas vizinhas do pacote (atraves dos T pacotes existentes)
+  # caso uma rota vizinha esteja lotada
+  #   - Pesquisar 
+  #       - 'pacotes ruins' dentro da rota vizinha: 
+  #         - 1. avaliar a retirada de 1 pacote da rota 
+  #         - 2. se for possivel inserir 'o pacote nao visitado' após a retirada do 'pacote ruim'
+  #           - 2.1. Avaliar o ganho da retirada do 'pacote ruim' montar dicio : 
+  # {
+  #       packet_id: ganho da retirada dele com a inserção do pacote nao vizitado,
+  #       
+  # } 
+  #           - 2.2. Tentar retirar outro pacote juntamente com o pacote anterior
+  #   - Tentar inserir o pacote selecionado retirando 'pacotes ruins'  
+  #   - Selecionar n 'pacotes ruins' até ser possível inserir o pacote selecionado
+  #   - Inserir o pacote selecionado da melhor maneira

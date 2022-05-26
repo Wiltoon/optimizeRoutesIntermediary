@@ -197,6 +197,7 @@ def rotineIntermediary(
     #   best_solution = sol2
     # else:
     #   break
+  reduceVehicles(instance, vehiclesPossibles, matrix_distance)
   finish_t = time.time()
   time_t = finish_t - start_t
   fileNamePath = "out/krs/"+city+"/"+instance.name+".json"
