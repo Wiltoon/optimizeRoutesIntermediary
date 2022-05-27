@@ -123,7 +123,7 @@ def selectVehicleWeak(instance, solution):
     vehicles_ordened[v] = sum([d.size for d in solution.vehicles[v].deliveries])
   for i in sorted(vehicles_ordened, key = vehicles_ordened.get):
     sizeUsed = vehicles_ordened[i]
-    if sizeUsed > 0.85*MAX_:
+    if sizeUsed > 0.5*MAX_:
       return None, -1
     else:
       weak = i
@@ -234,10 +234,56 @@ def solutionJsonWithTime(
   solution.to_file(namePathSolution)
   return solution
 
-def reduceVehicles(instance, vehiclesPossibles, matrix_distance):
+def selectVehicleWeakness(instance, vehicles, rule, matrix_distance):
+  vehicleSelect = {}
+  if rule == 'capacity':
+    capacity_min = 380
+    min_c = 0
+    for vehicle, id_packets in vehicles:
+      capacity = sum([instance[d].size for d in id_packets])
+      if capacity < capacity_min:
+        capacity_min = capacity
+        min_c = vehicle
+    vehicleSelect[min_c] = vehicles[min_c] 
+    return vehicleSelect   
+
+  elif rule == 'distance':
+    distance_per_packet_min = 9999999999
+    idx_v = 0
+    for vehicle, deliveries in vehicles:
+      distance = calculate_distance(vehicles[vehicle], matrix_distance)/len(deliveries)
+      if distance < distance_per_packet_min:
+        distance_per_packet_min = distance
+        idx_v = vehicle
+    vehicleSelect[idx_v] = vehicles[idx_v] 
+    return vehicleSelect
+
+  else:
+    print("Não implementado!")
+    return vehicleSelect
+
+def calculate_distance(indexes_points, matrix_distance):
+  distance = 0
+  for i in range(1,len(indexes_points)):
+    distance += matrix_distance[indexes_points[i-1]][indexes_points[i]]
+  return round(distance/1_000, 4)
+
+def reduceVehicles(instance, solution, vehiclesPossibles, matrix_distance):
   # reduzir o numero de veiculos
-  # acabar com os veiculos vazios
+  vehicles_occupation = {}
+  for v in range(0,len(vehiclesPossibles)):
+    # acabar com os veiculos vazios
+    if len(vehiclesPossibles[v]) != 0:
+      vehicles_occupation[v] = vehiclesPossibles[v] #indices
   # selecionar um veiculo fraco (por capacidade ou por distancia/packet)
+  vehicle, id_vehicle = selectVehicleWeak(instance, solution)
+  if vehicle != None:
+    # feito assim para saber a distancia do dep -> cliente
+    route_weak = [d.idu+1 for d in vehicle]
+    route_weak.insert(0,0)
+    # selecionar o pior pacote do veiculo
+    #   sera o pacote que mais compensa retirar do veiculo fraco
+    # colocar o pacote em uma rota proxima que nao seja a anterior
   # destruir a rota existente
   # criar lista de pacotes não vizitados (pacotes do veiculo fraco)
   # percorrer os pacotes não vizitados
