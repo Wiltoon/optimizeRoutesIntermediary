@@ -192,15 +192,16 @@ def rotineIntermediary(
         instance
       )
     new_solution = solutionJson(instance, vehiclesPossibles)
-    # sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
+    sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
+    print(sol2)
     # if best_solution > sol2:
     #   best_solution = sol2
     # else:
     #   break
-  reduceVehicles(instance, vehiclesPossibles, matrix_distance)
+  # reduceVehicles(instance, vehiclesPossibles, matrix_distance)
   finish_t = time.time()
   time_t = finish_t - start_t
-  fileNamePath = "out/krs/"+city+"/"+instance.name+".json"
+  fileNamePath = "out/kpmip/"+city+"/"+instance.name+".json"
   new_solution_t = solutionJsonWithTime(
     time_t, 
     instance, 
