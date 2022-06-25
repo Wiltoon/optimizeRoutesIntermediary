@@ -47,7 +47,7 @@ def recreate(names, city, method):
             pass
 
 if __name__ == '__main__':
-    method = "ccpmiphomo"
+    method = "kvprfhete"
     numDays = 30
     city = "pa-0"
     instances = []

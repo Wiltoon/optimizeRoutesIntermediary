@@ -6,8 +6,8 @@ def main():
     osrm_config = OSRMConfig(
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
-    methods = ["ccpmiphomo"]
-    cities = ["pa-0"]
+    methods = ["kvprfhete"]
+    cities = ["pa-0", "df-0"]
     qtdInstances = 30
     for method in methods:
         for city in cities:
