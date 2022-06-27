@@ -10,10 +10,23 @@ def collectBatchs(batch):
     # roteiriza o pacote dinamico
     return batch
 
-def routingPack(solution_initial, packet, matrix_d, instance, batch):
+def routingPack(
+    vehiclesPossibles, 
+    packet, 
+    matrix_d, 
+    instance, 
+    batch, 
+    T):
+    """Roteirizando um pacote dinamico"""
     #devolve lista das rotas vizinhas do pack dinamico
     attempt = 0
-    routes_neig = lookForNeighboringRoutes(packet, solution_initial, matrix_d) 
+    routes_neig = lookForNeighboringRoutes(
+        packet,
+        instance,
+        matrix_d,
+        vehiclesPossibles,
+        T
+    ) 
     for rSelect in routes_neig:
         try:
             insertionPackInRoute(packet, rSelect, batch)
@@ -72,6 +85,7 @@ def lookForNeighboringRoutes(
     md,
     vehiclesPossibles, 
     T):
+    """Procura pelas rotas vizinhas"""
     routes_neigs = []
     neighs = {}
     packs_neigs = []
