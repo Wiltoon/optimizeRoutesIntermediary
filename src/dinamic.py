@@ -1,25 +1,31 @@
+from xmlrpc.client import Boolean
 from classes.exceptions import NoRouterFound
 from computeDistances import calculateDistanceRoute
+from interRoute import twoOptStarModificated
 
 
 def collectBatchs(batch):
     # percorrer a fila dos pacotes dinamicos
     # tira o primeiro pacote dinamico do batch
     # roteiriza o pacote dinamico
+    return batch
 
 def routingPack(solution_initial, packet, matrix_d, instance, batch):
     #devolve lista das rotas vizinhas do pack dinamico
     attempt = 0
-    routes_neig = lookForNeighboringRoutes(packet, solution_initial) 
+    routes_neig = lookForNeighboringRoutes(packet, solution_initial, matrix_d) 
     for rSelect in routes_neig:
         try:
             insertionPackInRoute(packet, rSelect, batch)
             break
         except NoRouterFound:
             attempt += 1
-    if attempt == len(routes_neig): # sem rotas vizinhas do pack dinamico
+    if attempt == len(routes_neig): 
+        # sem rotas vizinhas do pack dinamico
         newRoute = createNewRoute(packet, solution_initial)
-        r1, r2 = twoOptStarModificated(newRoute, routes_neig[0], matrix_d, instance)
+        r1, r2 = bestLocalTwoOptModificated(
+            newRoute, routes_neig[0], matrix_d, instance
+        )
         newRoute = r1.copy() # modificar a nova rota
         routes_neig[0] = r2.copy() # modificar a rota vizinha
         createNewSolution(newRoute, solution_initial)
@@ -41,10 +47,10 @@ def insertionPackInRoute(packet, route, batch_d, md):
             raise NoRouterFound("Próxima rota!")
         else:
             raise Exception("Not implemented!!!")
+
+
 def insertNewPacket(packet, route, matrix_distance):
     p_insertion = []
-    # print("Route list = ")
-    # print(route)
     for i in range(1,len(route)+1):
         route_aux = [el for el in route]
         route_aux.insert(i, packet-1)
@@ -60,7 +66,49 @@ def insertNewPacket(packet, route, matrix_distance):
     # lista de pacotes arranjado da melhor forma
     return route
         
+def lookForNeighboringRoutes(
+    packet, 
+    instance, 
+    md,
+    vehiclesPossibles, 
+    T):
+    routes_neigs = []
+    neighs = {}
+    packs_neigs = []
 
+    # Dicionario com chave: id delivery, valor: distancia do pacote atual ate outro pacote
+    for i in range(1,len(instance.deliveries)+1):
+      neighs[i] = md[packet.idu+1][i]
+    # Aqui temos um vetor ordenado de todos os pacotes proximos
+    for id in sorted(neighs, key = neighs.get):
+      packs_neigs.append(id)
+    auxT = 0
+    for d in packs_neigs:
+      if auxT < T:
+        for k, v in vehiclesPossibles.items():
+            if d in v:
+                if k not in routes_neigs:
+                    routes_neigs.append(k)
+                auxT += 1
+    return routes_neigs
 
-            
-            
+def createNewRoute(packet, solution_initial):
+    # criar uma nova rota do deposito até o packet
+    pass
+
+def bestLocalTwoOptModificated(route1, route2, md):
+    """Ajusta as melhores posições para as rotas"""
+    bestScore = calculateDistanceRoute(route1, route2, md)+1
+    score = bestScore-1
+    while score < bestScore:
+        bestScore = score
+        score = twoOptStarModificated(route1, route2, md) 
+    return route1, route2
+
+def createNewSolution():
+    """a nova solução deve compor o vehiclePossible"""
+    pass
+
+def capacityRoute(route: CVRPSolutionVehicle) -> bool:
+    """Retorna verdadeiro se a capacidade da rota foi respeitada"""
+    return route.occupation() <= route.capacity
