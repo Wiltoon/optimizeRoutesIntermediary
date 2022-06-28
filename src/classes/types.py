@@ -99,6 +99,32 @@ class CVRPSolutionVehicle:
 
     deliveries: List[Delivery]
     """Ordered list of deliveries from the vehicle."""
+    
+    @property
+    def circuit(self) -> List[Point]:
+        return (
+            [self.origin] + [d.point for d in self.deliveries] + [self.origin]
+        )
+
+    @property
+    def no_return(self) -> List[Point]:
+        return (
+            [self.origin] + [d.point for d in self.deliveries]
+        )
+
+    @property
+    def occupation(self) -> int:
+        return sum([d.size for d in self.deliveries])
+@dataclass
+class CVRPSolutionVehicleHete:
+
+    origin: Point
+    """Location of the origin hub."""
+
+    deliveries: List[Delivery]
+    """Ordered list of deliveries from the vehicle."""
+    
+    capacity: int
 
     @property
     def circuit(self) -> List[Point]:

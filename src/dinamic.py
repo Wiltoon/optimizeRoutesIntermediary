@@ -1,5 +1,8 @@
 from xmlrpc.client import Boolean
+
+from matplotlib.style import available
 from classes.exceptions import NoRouterFound
+from classes.types import *
 from computeDistances import calculateDistanceRoute
 from interRoute import twoOptStarModificated
 
@@ -12,7 +15,7 @@ def collectBatchs(batch):
 
 def routingPack(
     vehiclesPossibles, 
-    packet, 
+    packet: Delivery, 
     matrix_d, 
     instance, 
     batch, 
@@ -20,6 +23,7 @@ def routingPack(
     """Roteirizando um pacote dinamico"""
     #devolve lista das rotas vizinhas do pack dinamico
     attempt = 0
+    id_pack = packet.idu
     routes_neig = lookForNeighboringRoutes(
         packet,
         instance,
@@ -29,13 +33,13 @@ def routingPack(
     ) 
     for rSelect in routes_neig:
         try:
-            insertionPackInRoute(packet, rSelect, batch)
+            insertionPackInRoute(id_pack, rSelect, batch, matrix_d) #OK?
             break
         except NoRouterFound:
             attempt += 1
     if attempt == len(routes_neig): 
         # sem rotas vizinhas do pack dinamico
-        newRoute = createNewRoute(packet, solution_initial)
+        newRoute = createNewRoute(id_pack, vehiclesPossibles)
         r1, r2 = bestLocalTwoOptModificated(
             newRoute, routes_neig[0], matrix_d, instance
         )
@@ -43,26 +47,75 @@ def routingPack(
         routes_neig[0] = r2.copy() # modificar a rota vizinha
         createNewSolution(newRoute, solution_initial)
     
-def insertionPackInRoute(packet, route, batch_d, md):
-    route_fake = insertNewPacket(packet, route, md)
-    if capacityRoute(route_fake):
-        # pacote encontrou a rota
-        print("WORK!")
+def selectWorstPacket(route, instance: CVRPInstance):
+    """Selecionar o id do pior pacote da rota CONSIDERE O DEPOSITO"""
+    worstScore = 0
+    id_worst = -1
+    for i in (1,len(route)):
+        score = availablePack(route, i, instance)
+        if worstScore < score:
+            id_worst = route[i]
+    return id_worst
+
+def availablePack(route, i, md):
+    """Avaliar o score de um pacote dentro de uma rota"""
+    if i >= 1: # a rota tem q ter pelo menos um pacote
+        id_prev = route[i-1]
+        id_act = route[i]
+        if i == (len(route)-1): # ultimo elemento
+            # id do prox pack = route[i-1] | route[i-1]+1 ?
+            return md[id_prev][id_act]
+        else:
+            id_next = route[i+1]
+            return md[id_prev][id_act] + md[id_act][id_next] - md[id_prev][id_next]
     else:
-        worst_pack = selectWorstPacket(route)
-        route_newpacket = createRouteNoWorst(worst_pack, route)
-        route_worstpack = route.copy()
-        select = compareRoutes(route_newpacket, route_worstpack)
+        return 0 
+
+def createRouteNoWorst(id_pack, route):
+    """Cria uma lista sem o id_pack da rota"""
+    return ([id for id in route if id != id_pack])
+
+def kickOutWorst(route, worst_pack_id, batch_d):
+    """Acrescenta o pior pacote na lista dos não visitados
+    e retira o pior pacote da rota original"""
+    batch_d.append(worst_pack_id)
+    route = createRouteNoWorst(worst_pack_id, route)
+    
+def insertionPackInRoute(instance, packet, route, batch_d, md):
+    """Tenta inserir um pacote dinamico na rota, se falhar tenta expulsar o pior pacote da rota selecionada"""
+    route_fake = insertNewPacket(packet, route, md) #ok
+    if capacityRoute(route_fake, instance, capacityMax=180): #ok
+        # pacote encontrou a rota
+        route = route_fake.copy()
+    else:
+        worst_pack_id = selectWorstPacket(route)
+        route_worstpack = createRouteNoWorst(worst_pack_id, route)
+        route_newpacket = insertNewPacket(packet, route_worstpack, md)
+        select = compareRoutes(route_newpacket, route, md)
         if select == 1:
-            kickOutWorst(route, worst_pack, batch_d)
+            kickOutWorst(route, worst_pack_id, batch_d)
             insertionPackInRoute(packet, route, batch_d, md)
         elif select == 2:
             raise NoRouterFound("Próxima rota!")
         else:
             raise Exception("Not implemented!!!")
 
+def compareRoutes(route1, route2, md):
+    """Compara duas rotas e devolve 
+    1 se a primeira for melhor e 
+    2 se a segunda for melhor"""
+    score1 = calculateDistanceRoute(route1, md)
+    score2 = calculateDistanceRoute(route2, md)
+    if score1 < score2:
+        return 1
+    else:
+        return 2
 
 def insertNewPacket(packet, route, matrix_distance):
+    """Insere o pacote dinamico na melhor posição da rota"""
+    # Verificar se esta adicionando o deposito no inicio 
+    print("Packet id ="+str(packet) + " será inserido na rota")
+    print(route)
     p_insertion = []
     for i in range(1,len(route)+1):
         route_aux = [el for el in route]
@@ -107,7 +160,7 @@ def lookForNeighboringRoutes(
     return routes_neigs
 
 def createNewRoute(packet, solution_initial):
-    # criar uma nova rota do deposito até o packet
+    """Criar uma nova rota do deposito até o packet"""
     pass
 
 def bestLocalTwoOptModificated(route1, route2, md):
@@ -123,6 +176,8 @@ def createNewSolution():
     """a nova solução deve compor o vehiclePossible"""
     pass
 
-def capacityRoute(route: CVRPSolutionVehicle) -> bool:
+def capacityRoute(route, instance: CVRPInstance, capacityMax) -> bool:
     """Retorna verdadeiro se a capacidade da rota foi respeitada"""
-    return route.occupation() <= route.capacity
+    for id_pack in route:
+        cap += instance.deliveries[id_pack].size
+    return cap <= capacityMax
