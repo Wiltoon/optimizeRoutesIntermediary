@@ -1,5 +1,6 @@
 # Here we have 2opt* with aim of swap 1 route's pack for another route's pack 
 from .classes.types import *
+from .computeDistances import *
 
 # Aqui é calculado a perda e o ganho de distância ao trocar 
 # o pacote r1[i] pelo r2[j] 
@@ -255,10 +256,6 @@ def twoOptStarModificated(route1, route2, md, instance):
             p1, p2)
         best_solution = selectPossible(possibles_solutions)
         if best_solution != None:
-            # print(best_solution.gain)
-            # print("ANTES")
-            # print(route1)
-            # print(route2)
             route1, route2  = best_solution.route1.copy(), best_solution.route2.copy()
             if best_solution.select[0] != best_solution.select[1]:
                 p1 += 1
@@ -268,11 +265,31 @@ def twoOptStarModificated(route1, route2, md, instance):
                     p1 += 1
                 else:
                     p2 += 1
-            # print("DEPOIS")
-            # print(route1)
-            # print(route2)  
         else:
             p1 += 1
             p2 += 1
-              
     return route1, route2
+
+def twoOptStarModificatedScore(route1, route2, md, instance):
+    p1, p2 = 1, 1
+    while p1 < len(route1) and p2 < len(route2):
+        # print(p1,p2)
+        possibles_solutions = constructPossiblesSolutions(
+            md, instance, 
+            route1, route2, 
+            p1, p2)
+        best_solution = selectPossible(possibles_solutions)
+        if best_solution != None:
+            route1, route2  = best_solution.route1.copy(), best_solution.route2.copy()
+            if best_solution.select[0] != best_solution.select[1]:
+                p1 += 1
+                p2 += 1
+            else:
+                if best_solution.select[0] == 1:
+                    p1 += 1
+                else:
+                    p2 += 1
+        else:
+            p1 += 1
+            p2 += 1
+    return calculateDistanceRoutes(route1, route2, md)

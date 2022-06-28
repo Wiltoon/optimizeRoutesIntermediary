@@ -2,12 +2,12 @@ import requests
 from .classes.types import *
 from .classes.distances import *
 
-def calculateDistanceRoute(
+def calculateDiferenceDistanceRoute(
     matrix_distance, 
     old_possible,
     possible # lista com pacotes de como sera atendido
     ):
-  # calcular a distancia percorrida pela rota desta forma
+  """Calcular a diferença entre uma rota antiga por uma rota nova"""
   distanceOld = 0 
   distanceNew = 0 
   # print(possible)
@@ -19,6 +19,30 @@ def calculateDistanceRoute(
     distanceNew += matrix_distance[possible[o]+1][possible[d]+1]
   distance = distanceNew - distanceOld
   # retorna a distancia percorrida pela rota
+  return distance
+
+def calculateDistanceRoutes(
+    routes,
+    matrix_distance 
+    ):
+  """Calcular a distancia percorrida por uma lista de rota"""
+  distance = []
+  # print(possible)´
+  for route in routes:
+    distance.append(computeDistanceRoute(route, matrix_distance))
+  # retorna a distancia percorrida pela rota
+  return sum(distance)
+
+
+def computeDistanceRoute(
+    route,
+    matrix_distance 
+    ):
+  """Retorna a distancia percorrida pela rota"""
+  distance = 0
+  for o in range(len(route)-1):
+    d = o + 1
+    distance += matrix_distance[route[o]+1][route[d]+1]
   return distance
 
 def distance_osrm(
