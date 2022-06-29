@@ -2,11 +2,12 @@ from dinamic import *
 from precompilerDinamic import separateBatchs
 from src.classes.types import *
 
-def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, md, TT):
+def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, md, TT, city):
     """
     Cada lote será separado na quantidade desejada e inserida no problema 
     """
     batchs = separateBatchs(instance, num_lotes)
+    NUM_LOTE = 0
     for batch in batchs:
         routingBatchs(
             vehiclesPossibles = vehiclesUseds,
@@ -16,15 +17,51 @@ def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, m
             T = TT,
             deliveries = deliveries
         )
-        buildSolution(instance, vehiclesUseds)
+        solution, filename = buildSolution(instance, vehiclesUseds, NUM_LOTE, city)
+        solution.to_file(filename)
+        NUM_LOTE += 1
         # GERAR RESULTADO PARCIAL?
 
-def solveD(instance, solution, osrm_config, T, city, NUM_LOTES):
+def buildSolution(instance: CVRPInstance, vehicles_occupation, NUM_LOTE, city):
+    dir_out = "out/dinamic/"+city+"/"
+    nameFile = "d"+instance.name+"batch-"+str(NUM_LOTE)+".json"
+    filename = dir_out + nameFile
+
+    name = instance.name
+    vehicles = []
+    for k, v in vehicles_occupation.items():
+        vehicle = []
+        dep = 0
+        for id_pack in v[0]:
+            if dep == 0:
+                dep += 1
+                continue
+            else:
+                point = Point(
+                    lng=instance.deliveries[id_pack].point.lng, 
+                    lat=instance.deliveries[id_pack].point.lat
+                )
+                delivery = Delivery(
+                    id_pack,
+                    point,
+                    instance.deliveries[id_pack].size,
+                    instance.deliveries[id_pack].idu
+                )
+                vehicle.append(delivery)
+        vehicleConstruct = CVRPSolutionVehicle(origin=instance.origin, deliveries=vehicle)
+        vehicles.append(vehicleConstruct)
+    solution = CVRPSolution(name=name, vehicles=vehicles)
+    return solution, filename
+
+def solveD(instance, solution, osrm_config, T, city, NUM_LOTES, day):
     """CASO 2 se solution = -1 e CASO 1 caso haja uma solution entregue"""
     deliveries = []
     if solution == -1:
         print("CASO 2")
-        matrix_distance = [[]] # montar matriz de distancia com deposito
+        points = [instance.origin] + [d.point for d in instance.deliveries]
+        matrix_distance = calculate_distance_matrix_m(
+            points, osrm_config
+        )
         vehiclesPossibles = {}
         solveDynamic(
             instance = instance, 
@@ -32,12 +69,12 @@ def solveD(instance, solution, osrm_config, T, city, NUM_LOTES):
             deliveries = deliveries, 
             vehiclesUseds = vehiclesPossibles, 
             md = matrix_distance,
-            TT = T
+            TT = T,
+            city = city
         )
-
     else:
         print("CASO 1")
-    # vehiclesPossibles = 0 # criar o dicionario a partir da solução
+        # vehiclesPossibles = 0 # criar o dicionario a partir da solução
 
 
 
