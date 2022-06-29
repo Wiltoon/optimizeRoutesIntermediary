@@ -16,6 +16,7 @@ def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, m
             T = TT,
             deliveries = deliveries
         )
+        buildSolution(instance, vehiclesUseds)
         # GERAR RESULTADO PARCIAL?
 
 def solveD(instance, solution, osrm_config, T, city, NUM_LOTES):
