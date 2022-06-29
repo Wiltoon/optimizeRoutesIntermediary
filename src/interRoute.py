@@ -272,6 +272,7 @@ def twoOptStarModificated(route1, route2, md, instance):
 
 def twoOptStarModificatedScore(route1, route2, md, instance):
     p1, p2 = 1, 1
+    routes = [route1, route2]
     while p1 < len(route1) and p2 < len(route2):
         # print(p1,p2)
         possibles_solutions = constructPossiblesSolutions(
@@ -292,4 +293,4 @@ def twoOptStarModificatedScore(route1, route2, md, instance):
         else:
             p1 += 1
             p2 += 1
-    return calculateDistanceRoutes(route1, route2, md)
+    return calculateDistanceRoutes(routes, md)

@@ -10,6 +10,9 @@ def calculateDiferenceDistanceRoute(
   """Calcular a diferença entre uma rota antiga por uma rota nova"""
   distanceOld = 0 
   distanceNew = 0 
+  # print("OLDER =>")
+  # print(old_possible)
+  # print("ACTUAL =>")
   # print(possible)
   for old in range(len(old_possible)-1):
     dest = old + 1
@@ -21,10 +24,7 @@ def calculateDiferenceDistanceRoute(
   # retorna a distancia percorrida pela rota
   return distance
 
-def calculateDistanceRoutes(
-    routes,
-    matrix_distance 
-    ):
+def calculateDistanceRoutes(routes, matrix_distance):
   """Calcular a distancia percorrida por uma lista de rota"""
   distance = []
   # print(possible)´
@@ -34,10 +34,7 @@ def calculateDistanceRoutes(
   return sum(distance)
 
 
-def computeDistanceRoute(
-    route,
-    matrix_distance 
-    ):
+def computeDistanceRoute(route, matrix_distance):
   """Retorna a distancia percorrida pela rota"""
   distance = 0
   for o in range(len(route)-1):

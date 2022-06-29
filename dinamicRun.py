@@ -1,4 +1,7 @@
-from dinamic import *
+from collections import deque
+
+from src.dinamic import *
+from src.computeDistances import *
 from precompilerDinamic import separateBatchs
 from src.classes.types import *
 
@@ -8,10 +11,11 @@ def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, m
     """
     batchs = separateBatchs(instance, num_lotes)
     NUM_LOTE = 0
+    # print(batchs)
     for batch in batchs:
         routingBatchs(
             vehiclesPossibles = vehiclesUseds,
-            batch = batch,
+            batch = deque(batch),
             instance = instance,
             matrix = md, 
             T = TT,
@@ -19,14 +23,15 @@ def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, m
         )
         solution, filename = buildSolution(instance, vehiclesUseds, NUM_LOTE, city)
         solution.to_file(filename)
+        print(calculateSolutionMatrix(solution, md))
         NUM_LOTE += 1
         # GERAR RESULTADO PARCIAL?
 
 def buildSolution(instance: CVRPInstance, vehicles_occupation, NUM_LOTE, city):
+    """Cria a solução e o nome do arquivo json"""
     dir_out = "out/dinamic/"+city+"/"
     nameFile = "d"+instance.name+"batch-"+str(NUM_LOTE)+".json"
     filename = dir_out + nameFile
-
     name = instance.name
     vehicles = []
     for k, v in vehicles_occupation.items():
@@ -53,7 +58,7 @@ def buildSolution(instance: CVRPInstance, vehicles_occupation, NUM_LOTE, city):
     solution = CVRPSolution(name=name, vehicles=vehicles)
     return solution, filename
 
-def solveD(instance, solution, osrm_config, T, city, NUM_LOTES, day):
+def solveD(instance, solution, osrm_config, T, city, NUM_LOTES):
     """CASO 2 se solution = -1 e CASO 1 caso haja uma solution entregue"""
     deliveries = []
     if solution == -1:
@@ -62,6 +67,7 @@ def solveD(instance, solution, osrm_config, T, city, NUM_LOTES, day):
         matrix_distance = calculate_distance_matrix_m(
             points, osrm_config
         )
+        print(len(points))
         vehiclesPossibles = {}
         solveDynamic(
             instance = instance, 
@@ -82,8 +88,8 @@ def solveD(instance, solution, osrm_config, T, city, NUM_LOTES, day):
 # 1 CASO = TEMOS UMA SOLUÇÃO INICIAL COMO ELA DEVERA COMEÇAR??
 # 2 CASO = TEMOS NENHUMA SOLUÇÃO INICIAL E GERAMOS TUDO
 def main():
-    T = 3
-    NUM_LOTES = 5
+    T = 5
+    NUM_LOTES = 2
     osrm_config = OSRMConfig(
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
@@ -93,6 +99,10 @@ def main():
     for city in cities:
         for day in range(startInstance, endInstance):
             instanceName = "cvrp-0-"+city.split('-')[0]+"-"+str(day)+".json"
+            print(instanceName)
             path_instance = "inputs/"+city+"/"+instanceName
             instance = CVRPInstance.from_file(path_instance)
             solveD(instance, -1, osrm_config, T, city, NUM_LOTES)
+
+if __name__ == '__main__':
+   main()
