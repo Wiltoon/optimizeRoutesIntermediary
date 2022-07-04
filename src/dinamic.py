@@ -9,18 +9,61 @@ from .interRoute import *
 def routingBatchs(vehiclesPossibles: dict, batch: deque, instance: CVRPInstance, 
     matrix, T, deliveries):
     """Roteirizando um lote"""
+    # decrease = True
+    # order_batch = orderBatch(batch, instance, vehiclesPossibles, decrease, matrix)
+    order_batch = batch
     # percorrer a fila dos pacotes dinamicos
-    while len(batch) > 0:
+    while len(order_batch) > 0:
         # tira o primeiro pacote dinamico do batch
-        pack = batch.popleft() 
-        print(pack)
+        pack = order_batch.popleft() 
+        # print(pack)
         # roteiriza o pacote dinamico
-        routingPack(vehiclesPossibles, pack, matrix, instance, batch, T, deliveries)
-    return batch
+        routingPack(vehiclesPossibles, pack, matrix, instance, order_batch, T, deliveries)
+    return order_batch
     
+def orderBatch(batch, instance, vehiclesPossibles, order, md):
+    """Se order = 1 é ordem crescente e -1 decrescente"""
+    packetsExist = whoIsOrder(vehiclesPossibles, instance)
+    for p in batch:
+        packetsExist.append(p)
+    orderBatch = buildMetric(instance, batch, packetsExist, order, md)
+    return orderBatch
+
+def whoIsOrder(vehiclesPossibles, instance):
+    deposit = instance.origin
+    packets = [deposit]
+    for k, v in vehiclesPossibles.items():
+        dep = 0
+        for id_pack in v[0]:
+            if dep == 0:
+                dep += 1
+            else:
+                packets.append(instance.deliveries[id_pack])
+    return packets
+
+def buildMetric(instance, batch, packetsExist, order, md):
+    distances_pack = {}
+    orderBatchList = []
+    for p in batch:
+        distances_pack[p.idu] = meanDistance(p, packetsExist, md)
+    # construir o batch crescente/decrescente
+    for i in sorted(distances_pack, key = distances_pack.get, reverse=order):
+        orderBatchList.append(instance.deliveries[i])
+    orderBatch = deque(orderBatchList)
+    return orderBatch
+
+def meanDistance(p, packetsExist, md):
+    d = 0
+    for atual in packetsExist:
+        if(type(atual) is Point):
+            d += md[0][p.idu+1]
+        else:
+            d += md[p.idu+1][atual.idu+1]
+    return d/len(packetsExist)
+
 def routingPack(vPoss, packet: Delivery, md, instance, batch, T, deliveries):
     """
-    Roteirizando um pacote dinamico
+    Roteirizando um pacote dinamico (packet)
     """
     attempt = 0
     id_pack = packet.idu
@@ -46,6 +89,75 @@ def routingPack(vPoss, packet: Delivery, md, instance, batch, T, deliveries):
             # MODIFICAR O VEHICLESPOSSIBLE
             createNewSolution(id_route1, rneigh[0], r1, r2, vPoss)
 
+def reduceVehicles(instance, vPoss, matrix):
+    """Reduzir o número de veículos"""
+    # calcular o total de cargas no sistema / carga maxima = numero minimo de veiculos
+    num_min_vehicles = sum([d.size for d in instance.deliveries])/180
+    num_vehicles = len(vPoss) # numero de veiculos atual
+    if num_min_vehicles <= num_vehicles:
+        metric = "DENSITY" 
+        # metric =  "CAPACITY"
+        vehicle_selected, id_route = selectWeakRoute(instance, vPoss, metric)
+        vPoss = destroyVehicle(
+            instance, 
+            vPoss, 
+            vehicle_selected, 
+            id_route, 
+            matrix)
+    return vPoss
+
+
+def destroyVehicle(instance: CVRPInstance, vPoss, route_selected, id_route, matrix):
+    """A ideia dessa função é diminuir o número de rotas"""
+    # remover o vehicle selecionado e 
+    del vPoss[id_route]
+    # rotear os pacotes livres
+    batch = buildBatchRoute(route_selected, instance)
+    for packet in batch:
+        routingPack(vPoss,packet,matrix,instance,batch,10,instance.deliveries)
+    return vPoss
+
+def buildBatchRoute(route_select, instance):
+    dep = 0
+    route = []
+    for r in route_select:
+        if dep == 0:
+            dep += 1
+        else:
+            route.append(instance.deliveries[r])
+    return route
+
+def selectWeakRoute(instance, vPoss, metric, md):
+    """Deve retornar a rota do vehicle selecionado e o id para ser removido"""
+    route_select = []
+    id_route = 0
+    if metric == "DENSITY":
+        density_distance_max = 0
+        for k, v in vPoss.items():
+            density_distance = calculateDensityDistance(instance, v[0], md)
+            if density_distance_max < density_distance:
+                route_select = v[0]
+                id_route = k
+    elif metric == "CAPACITY":
+        cap_min = 200
+        for k, v in vPoss.items():
+            capacity = sum([instance.deliveries[d].size for d in v[0]])
+            if cap_min > capacity:
+                cap_min = capacity
+                route_select = v[0]
+                id_route = k    
+    return route_select, id_route
+
+def calculateDensityDistance(route, md):
+    """Calcula a densidade de distancia por pacote"""
+    npackets = len(route)
+    distance = 0
+    for i in range(1,len(route)):
+        if i == 1:
+            distance = md[0][route[i]+1]
+        else:
+            distance += md[route[i-1]+1][route[i]+1]
+    return float(distance/npackets)
 
 def selectWorstPacket(route, md):
     """
@@ -90,7 +202,7 @@ def kickOutWorst(instance, route, worst_pack_id, batch_d, deliveries):
     Acrescenta o pior pacote na lista dos não visitados
     e retira o pior pacote da rota original
     """
-    print("Pacote " +str(worst_pack_id) + " removido.")
+    # print("Pacote " +str(worst_pack_id) + " removido.")
     batch_d.append(instance.deliveries[worst_pack_id])
     route = createRouteNoWorst(worst_pack_id, route)  
     deliveries.remove(worst_pack_id)
@@ -104,17 +216,17 @@ def insertionPackInRoute(instance: CVRPInstance, id_packet: int, vPoss,
     """
     route_fake = insertNewPacket(id_packet, vPoss[rSelect][0], md) #ok
     if capacityRoute(route_fake, instance, vPoss[rSelect][1]): #ok
-        print("pacote " +str(id_packet)+ " encontrou na rota")
+        # print("pacote " +str(id_packet)+ " encontrou na rota")
         deliveries.append(id_packet)
-        print(vPoss[rSelect][0])
+        # print(vPoss[rSelect][0])
         vPoss[rSelect][0] = route_fake
     else:
         worst_pack_id = selectWorstPacket(vPoss[rSelect][0], md)
         route_worstpack = createRouteNoWorst(worst_pack_id, vPoss[rSelect][0])
         route_newpacket = insertNewPacket(id_packet, route_worstpack, md)
-        print("COMPARE =>")
-        print(route_newpacket)
-        print(vPoss[rSelect][0])
+        # print("COMPARE =>")
+        # print(route_newpacket)
+        # print(vPoss[rSelect][0])
         if compareRoutes(route_newpacket, vPoss[rSelect][0], md):
             vPoss[rSelect][0] = kickOutWorst(
                 instance, vPoss[rSelect][0], worst_pack_id, batch_d, deliveries
@@ -141,8 +253,8 @@ def insertNewPacket(id_packet, route, matrix_distance):
     """Insere o pacote dinamico na melhor posição da rota"""
     # Verificar se esta adicionando o deposito no inicio 
     route_supos = route.copy()
-    print("Packet id = "+str(id_packet) + " será inserido na rota")
-    print(route)
+    # print("Packet id = "+str(id_packet) + " será inserido na rota")
+    # print(route)
     p_insertion = []
     for i in range(1,len(route)+1):
         route_aux = [el for el in route]
@@ -190,7 +302,7 @@ def createNewRoute(packet_id, vehiclesPossibles, newCap, deliveries):
     newVehicle = len(vehiclesPossibles) + 1
     vehiclesPossibles[newVehicle] = [[0, packet_id], newCap]
     deliveries.append(packet_id)
-    print("Nova rota criada")
+    # print("Nova rota criada")
     return vehiclesPossibles[newVehicle][0], newVehicle
 
 def bestLocalTwoOptModificated(route1, route2, md, instance):
@@ -211,7 +323,7 @@ def createNewSolution(id_route1, id_route2, r1, r2, vehiclesPossibles):
 def capacityRoute(route, instance: CVRPInstance, capacityMax) -> bool:
     """Retorna verdadeiro se a capacidade da rota foi respeitada"""
     cap = 0
-    print(route)
+    # print(route)
     for id_pack in route:
         cap += instance.deliveries[id_pack].size
     return cap <= capacityMax

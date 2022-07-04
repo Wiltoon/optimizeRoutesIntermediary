@@ -10,7 +10,6 @@ from .operations import *
 from .classes.types import *
 from .classes.task1 import *
 
-## Essa função deve colocar os packets nos melhores vizinhos
 def reallocatePacksVehicle(
     instance: CVRPInstance, 
     vehicle: list, 
@@ -19,6 +18,7 @@ def reallocatePacksVehicle(
     id_vehicle: int,
     matrix_distance,
     T: int) -> CVRPSolution:
+  """Essa função deve colocar os packets nos melhores vizinhos"""
 
   index = 1
   # print(len(instance.deliveries))
@@ -62,7 +62,7 @@ def reallocatePacksVehicle(
   # print(vehiclesPossibles)
   solution_partial = solutionJson(instance, vehiclesPossibles)
   return solution_partial
-    
+   
 
 # Deve retornar um new_solution: CVRPSolution
 def rotineIntermediary(

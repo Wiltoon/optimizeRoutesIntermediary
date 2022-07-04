@@ -1,5 +1,7 @@
 from collections import deque
+from itertools import combinations
 
+from src.operations import createVehiclesPossibles, solutionJson
 from src.dinamic import *
 from src.computeDistances import *
 from precompilerDinamic import separateBatchs
@@ -13,6 +15,7 @@ def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, m
     """
     batchs = separateBatchs(instance, num_lotes)
     NUM_LOTE = 0
+    scores = []
     # print(batchs)
     for batch in batchs:
         routingBatchs(
@@ -24,12 +27,14 @@ def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, m
             deliveries = deliveries
         )
         solution, filename = buildSolution(instance, vehiclesUseds, NUM_LOTE, city)
-        solution.to_file(filename)
-        print(calculateSolutionMatrix(solution, md))
+        # print("BATCH N = " + str(NUM_LOTE+1))
         NUM_LOTE += 1
-        # GERAR RESULTADO PARCIAL?
-        plot_cvrp_solution(solution)
-
+    
+    print(calculateSolutionMatrix(solution, md))
+    # scores.append(calculateSolutionMatrix(solution, md))
+    # GERAR RESULTADO PARCIAL?
+    # plot_cvrp_solution_routes(solution)
+    return solution
 
 
 def buildSolution(instance: CVRPInstance, vehicles_occupation, NUM_LOTE, city):
@@ -67,14 +72,14 @@ def solveD(instance, solution, osrm_config, T, city, NUM_LOTES):
     """CASO 2 se solution = -1 e CASO 1 caso haja uma solution entregue"""
     deliveries = []
     if solution == -1:
-        print("CASO 2")
+        # print("CASO 2")
         points = [instance.origin] + [d.point for d in instance.deliveries]
         matrix_distance = calculate_distance_matrix_m(
             points, osrm_config
         )
         print(len(points))
         vehiclesPossibles = {}
-        solveDynamic(
+        new_solution = solveDynamic(
             instance = instance, 
             num_lotes = NUM_LOTES, 
             deliveries = deliveries, 
@@ -83,8 +88,23 @@ def solveD(instance, solution, osrm_config, T, city, NUM_LOTES):
             TT = T,
             city = city
         )
+        vehiclesPossibles = createVehiclesPossibles(new_solution)
+        allin = [f for f in range(len(vehiclesPossibles))]
+        combs = [p for p in list(combinations(allin,2))]
+        for i in range(10):
+            for comb in combs:
+                vehiclesPossibles[comb[0]], vehiclesPossibles[comb[1]] = twoOptStarModificated(
+                    vehiclesPossibles[comb[0]],
+                    vehiclesPossibles[comb[1]],
+                    matrix_distance,
+                    instance
+                )
+        new_solution = solutionJson(instance, vehiclesPossibles)
+        print(calculateSolutionMatrix(new_solution, matrix_distance))
+        return new_solution
     else:
-        print("CASO 1")
+        return 0
+        # print("CASO 1")
         # vehiclesPossibles = 0 # criar o dicionario a partir da solução
 
 
@@ -98,19 +118,23 @@ def executeDinamic(T, NUM_LOTES):
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
     cities = ["pa-0"]
-    startInstance = 90
-    endInstance = 91
+    se = [90,92]
+    startInstance = se[0]
+    endInstance = se[1]
     for city in cities:
         for day in range(startInstance, endInstance):
             instanceName = "cvrp-0-"+city.split('-')[0]+"-"+str(day)+".json"
-            print(instanceName)
+            # print(instanceName)
             path_instance = "inputs/"+city+"/"+instanceName
+            filename = "out/srn/"+city+"/"+instanceName
             instance = CVRPInstance.from_file(path_instance)
-            solveD(instance, -1, osrm_config, T, city, NUM_LOTES)
+            solution = solveD(instance, -1, osrm_config, T, city, NUM_LOTES)
+            solution.to_file(filename)
 
 if __name__ == '__main__':
-    varT = [15,16]
-    varLOTES = [4,5]
+    varT = [8,12]
+    varLOTES = [1,7]
     for T in range(varT[0], varT[1]):
         for NUM_LOTES in range(varLOTES[0], varLOTES[1]):
+            print("Para T, NUM_LOTES = "+str(T)+"-"+str(NUM_LOTES))
             executeDinamic(T, NUM_LOTES)
