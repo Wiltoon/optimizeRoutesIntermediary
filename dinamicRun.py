@@ -93,6 +93,7 @@ def solveD(instance, solution, osrm_config, T, city, NUM_LOTES):
 # 1 CASO = TEMOS UMA SOLUÇÃO INICIAL COMO ELA DEVERA COMEÇAR??
 # 2 CASO = TEMOS NENHUMA SOLUÇÃO INICIAL E GERAMOS TUDO
 def executeDinamic(T, NUM_LOTES):
+
     osrm_config = OSRMConfig(
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
