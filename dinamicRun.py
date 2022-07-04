@@ -4,6 +4,8 @@ from src.dinamic import *
 from src.computeDistances import *
 from precompilerDinamic import separateBatchs
 from src.classes.types import *
+from src.classes.distances import *
+from src.plot_solution import *
 
 def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, md, TT, city):
     """
@@ -26,6 +28,9 @@ def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, m
         print(calculateSolutionMatrix(solution, md))
         NUM_LOTE += 1
         # GERAR RESULTADO PARCIAL?
+        plot_cvrp_solution(solution)
+
+
 
 def buildSolution(instance: CVRPInstance, vehicles_occupation, NUM_LOTE, city):
     """Cria a solução e o nome do arquivo json"""
@@ -87,9 +92,8 @@ def solveD(instance, solution, osrm_config, T, city, NUM_LOTES):
 # TEMOS DOIS CASOS!!!
 # 1 CASO = TEMOS UMA SOLUÇÃO INICIAL COMO ELA DEVERA COMEÇAR??
 # 2 CASO = TEMOS NENHUMA SOLUÇÃO INICIAL E GERAMOS TUDO
-def main():
-    T = 5
-    NUM_LOTES = 5
+def executeDinamic(T, NUM_LOTES):
+
     osrm_config = OSRMConfig(
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
@@ -105,4 +109,8 @@ def main():
             solveD(instance, -1, osrm_config, T, city, NUM_LOTES)
 
 if __name__ == '__main__':
-   main()
+    varT = [15,16]
+    varLOTES = [4,5]
+    for T in range(varT[0], varT[1]):
+        for NUM_LOTES in range(varLOTES[0], varLOTES[1]):
+            executeDinamic(T, NUM_LOTES)
