@@ -74,3 +74,16 @@ def calculateSolutionMatrix(solution: CVRPSolution, matrix_distance):
     for i in range(len(v)-1):
       route_distances_m += round(matrix_distance[v[i]][v[i+1]], 1)
   return round(route_distances_m / 1_000, 4)
+
+def calculateSolutionMatrix(solution: CVRPSolutionOpt, matrix_distance):
+  newPossible = {}
+  for v in range(len(solution.vehicles)):
+    newPossible[v] = [0]
+    for d in solution.vehicles[v].deliveries:
+      newPossible[v].append(d.idu+1)
+    # print(newPossible[v])
+  route_distances_m = 0
+  for k, v in newPossible.items():
+    for i in range(len(v)-1):
+      route_distances_m += round(matrix_distance[v[i]][v[i+1]], 1)
+  return round(route_distances_m / 1_000, 4)

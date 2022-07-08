@@ -1,0 +1,8 @@
+cvrp-0-rj-98.json
+Para T, NUM_LOTES, ORG = 30-1S
+3793.7492 202 30 1 S
+Para T, NUM_LOTES, ORG = 30-1D
+3880.3804 217 30 1 D
+Para T, NUM_LOTES, ORG = 30-1C
+3949.6989 229 30 1 C
+cvrp-0-rj-99.json

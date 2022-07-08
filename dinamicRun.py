@@ -1,7 +1,10 @@
 from collections import deque
 from itertools import combinations
+import time
 
-from src.operations import createVehiclesPossibles, solutionJson
+from tqdm import tqdm
+
+from src.operations import *
 from src.dinamic import *
 from src.computeDistances import *
 from precompilerDinamic import separateBatchs
@@ -9,7 +12,7 @@ from src.classes.types import *
 from src.classes.distances import *
 from src.plot_solution import *
 
-def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, md, TT, city):
+def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, md, TT, org):
     """
     Cada lote será separado na quantidade desejada e inserida no problema 
     """
@@ -24,24 +27,96 @@ def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, m
             instance = instance,
             matrix = md, 
             T = TT,
-            deliveries = deliveries
+            deliveries = deliveries,
+            decrease = org
         )
-        solution, filename = buildSolution(instance, vehiclesUseds, NUM_LOTE, city)
+        solution = buildSolution(instance, vehiclesUseds)
         # print("BATCH N = " + str(NUM_LOTE+1))
         NUM_LOTE += 1
     
-    print(calculateSolutionMatrix(solution, md))
+    # print(calculateSolutionMatrix(solution, md))
     # scores.append(calculateSolutionMatrix(solution, md))
     # GERAR RESULTADO PARCIAL?
     # plot_cvrp_solution_routes(solution)
     return solution
 
+def solveDynamicBatch(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, md, TT, order):
+    """
+    Cada lote será separado na quantidade desejada e inserida no problema 
+    """
+    batchs = separateBatchs(instance, num_lotes)
+    NUM_LOTE = 0
+    vehicles = []
+    # print(batchs)
+    for batch in tqdm(batchs, desc="DESPACHANDO LOTES"):
+        routingBatchs(
+            vehiclesPossibles = vehiclesUseds,
+            batch = deque(batch),
+            instance = instance,
+            matrix = md, 
+            T = TT,
+            deliveries = deliveries,
+            decrease = order
+        )
+        vehicles = despatchVehicles(instance, vehiclesUseds, deliveries, vehicles, 175)
+        # print("BATCH N = " + str(NUM_LOTE+1))
+        NUM_LOTE += 1
+    vehicles = despatchVehicles(instance, vehiclesUseds, deliveries, vehicles, 0)
+    solution = CVRPSolution(name = instance.name, vehicles = vehicles)
+    return solution
 
-def buildSolution(instance: CVRPInstance, vehicles_occupation, NUM_LOTE, city):
+def despatchVehicles(instance, vehiclesUseds, deliverys, vehicles, capacityMax) -> List[CVRPSolutionVehicle]:
+    idVehiclesDespatchs = []
+    for k, v in vehiclesUseds.items():
+        capacity = 0
+        dep = 0
+        for d in v[0]:
+            if dep == 0:
+                dep += 1
+            else:
+                capacity += instance.deliveries[d].size
+        if capacity >= capacityMax:
+            idVehiclesDespatchs.append(k)
+    print(idVehiclesDespatchs)
+    for id_route in idVehiclesDespatchs:
+        vehicle = []
+        dep = 0
+        for id_pack in vehiclesUseds[id_route][0]:
+            if dep == 0:
+                dep += 1
+                continue
+            else:
+                point = Point(
+                    lng=instance.deliveries[id_pack].point.lng, 
+                    lat=instance.deliveries[id_pack].point.lat
+                )
+                delivery = Delivery(
+                    id_pack,
+                    point,
+                    instance.deliveries[id_pack].size,
+                    instance.deliveries[id_pack].idu
+                )
+                vehicle.append(delivery)
+        vehicleConstruct = CVRPSolutionVehicle(origin=instance.origin, deliveries=vehicle)        
+        vehicles.append(vehicleConstruct)
+        # print("OO QUE E ISSO:?")
+        # print(vehiclesUseds[id_route][0])
+        dep = 0
+        for demand in vehiclesUseds[id_route][0]:
+            if dep == 0:
+                dep += 1
+            else:
+                deliverys.remove(demand)
+        print("Vehicle Despatch: ", len(vehicles))
+        del vehiclesUseds[id_route]
+    return vehicles
+
+
+def buildSolution(instance: CVRPInstance, vehicles_occupation):
     """Cria a solução e o nome do arquivo json"""
-    dir_out = "out/dinamic/"+city+"/"
-    nameFile = "d"+instance.name+"batch-"+str(NUM_LOTE)+".json"
-    filename = dir_out + nameFile
+    # dir_out = "out/dinamic/"+city+"/"
+    # nameFile = "d"+instance.name+"batch-"+str(NUM_LOTE)+".json"
+    # filename = dir_out + nameFile
     name = instance.name
     vehicles = []
     for k, v in vehicles_occupation.items():
@@ -66,44 +141,63 @@ def buildSolution(instance: CVRPInstance, vehicles_occupation, NUM_LOTE, city):
         vehicleConstruct = CVRPSolutionVehicle(origin=instance.origin, deliveries=vehicle)
         vehicles.append(vehicleConstruct)
     solution = CVRPSolution(name=name, vehicles=vehicles)
-    return solution, filename
+    return solution #, filename
 
-def solveD(instance, solution, osrm_config, T, city, NUM_LOTES):
+def solveD(instance, solution, matrix_distance, T, NUM_LOTES, org, SCOREMIN):
     """CASO 2 se solution = -1 e CASO 1 caso haja uma solution entregue"""
     deliveries = []
     if solution == -1:
         # print("CASO 2")
-        points = [instance.origin] + [d.point for d in instance.deliveries]
-        matrix_distance = calculate_distance_matrix_m(
-            points, osrm_config
-        )
-        print(len(points))
-        vehiclesPossibles = {}
+        # print(len(points))
+        vPossibles = {}
+        st = time.time()
         new_solution = solveDynamic(
             instance = instance, 
             num_lotes = NUM_LOTES, 
             deliveries = deliveries, 
-            vehiclesUseds = vehiclesPossibles, 
+            vehiclesUseds = vPossibles, 
             md = matrix_distance,
             TT = T,
-            city = city
+            org = org
         )
-        vehiclesPossibles = createVehiclesPossibles(new_solution)
-        allin = [f for f in range(len(vehiclesPossibles))]
+        # vehiclesPossibles = reduceVehicles(
+        #   instance, vehiclesPossibles, matrix_distance)
+        # print(vehiclesPossibles)
+        vPossibles = createVehiclesPossibles(new_solution)
+        allin = [f for f in range(len(vPossibles))]
         combs = [p for p in list(combinations(allin,2))]
         for i in range(10):
             for comb in combs:
-                vehiclesPossibles[comb[0]], vehiclesPossibles[comb[1]] = twoOptStarModificated(
-                    vehiclesPossibles[comb[0]],
-                    vehiclesPossibles[comb[1]],
+                vPossibles[comb[0]], vPossibles[comb[1]] = twoOptStarModificated(
+                    vPossibles[comb[0]],
+                    vPossibles[comb[1]],
                     matrix_distance,
                     instance
                 )
-        new_solution = solutionJson(instance, vehiclesPossibles)
-        print(calculateSolutionMatrix(new_solution, matrix_distance))
+        fn = time.time()
+        time_exec = float(fn-st)                
+        new_solution = solutionJsonWithTimeT(time_exec, instance, vPossibles)
+        score = calculateSolutionMatrix(new_solution, matrix_distance)
+        if score < SCOREMIN:
+            SCOREMIN = score
+            print(score,len(vPossibles),T,NUM_LOTES,nameOrg(org))
         return new_solution
     else:
-        return 0
+        
+        vPossibles = {}
+        # vai receber 1 lote de cada vez
+        new_solution = solveDynamicBatch(
+            instance = instance, 
+            num_lotes = NUM_LOTES, 
+            deliveries = deliveries, 
+            vehiclesUseds = vPossibles, 
+            md = matrix_distance,
+            TT = T,
+            order = org
+        )
+        score = calculateSolutionMatrix(new_solution, matrix_distance)
+        print(score)
+        return new_solution
         # print("CASO 1")
         # vehiclesPossibles = 0 # criar o dicionario a partir da solução
 
@@ -112,29 +206,44 @@ def solveD(instance, solution, osrm_config, T, city, NUM_LOTES):
 # TEMOS DOIS CASOS!!!
 # 1 CASO = TEMOS UMA SOLUÇÃO INICIAL COMO ELA DEVERA COMEÇAR??
 # 2 CASO = TEMOS NENHUMA SOLUÇÃO INICIAL E GERAMOS TUDO
-def executeDinamic(T, NUM_LOTES):
-
+def executeDinamic():
+    varT = [30,31]
+    varLOTES = [5,6]
     osrm_config = OSRMConfig(
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
     cities = ["pa-0"]
-    se = [90,92]
+    se = [90,91]
+    organisation = [None, True, False] # sem ordem, ordem decrescente, ordem crescente
     startInstance = se[0]
     endInstance = se[1]
     for city in cities:
         for day in range(startInstance, endInstance):
             instanceName = "cvrp-0-"+city.split('-')[0]+"-"+str(day)+".json"
-            # print(instanceName)
+            print(instanceName)
             path_instance = "inputs/"+city+"/"+instanceName
-            filename = "out/srn/"+city+"/"+instanceName
             instance = CVRPInstance.from_file(path_instance)
-            solution = solveD(instance, -1, osrm_config, T, city, NUM_LOTES)
-            solution.to_file(filename)
+            points = [instance.origin] + [d.point for d in instance.deliveries]
+            matrix_distance = calculate_distance_matrix_m(
+                points, osrm_config
+            )
+            for T in range(varT[0], varT[1]):
+                for org in organisation:
+                    for NUM_LOTES in range(varLOTES[0], varLOTES[1]):
+                        print("Para T, NUM_LOTES, ORG = "+str(T)+"-"+str(NUM_LOTES) + nameOrg(org))
+                        name = "cvrp-0-"+city.split('-')[0]+"-"+str(day)+"-T-"+str(T)+"-L-"+str(NUM_LOTES)+"-O-"+nameOrg(org)
+                        filename = "out/srn/"+city+"/"+name+".json"
+                        scoremin = 999999999
+                        solution = solveD(instance, 1, matrix_distance, T, NUM_LOTES, org, scoremin)
+                        solution.to_file(filename)
 
+def nameOrg(value):
+    if value == None:
+        return "S"
+    elif value == True:
+        return "D"
+    else:
+        return "C"
+    
 if __name__ == '__main__':
-    varT = [8,12]
-    varLOTES = [1,7]
-    for T in range(varT[0], varT[1]):
-        for NUM_LOTES in range(varLOTES[0], varLOTES[1]):
-            print("Para T, NUM_LOTES = "+str(T)+"-"+str(NUM_LOTES))
-            executeDinamic(T, NUM_LOTES)
+    executeDinamic()

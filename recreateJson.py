@@ -49,7 +49,7 @@ def recreate(names, city, method):
 if __name__ == '__main__':
     method = "kvprfhete"
     numDays = 30
-    city = "pa-0"
+    city = "rj-0"
     instances = []
     for i in range(90, 90+numDays):
         instance = "cvrp-0-"+city.split('-')[0]+"-"+str(i)+".json"

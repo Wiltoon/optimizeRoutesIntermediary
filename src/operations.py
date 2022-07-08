@@ -201,6 +201,37 @@ def solutionJson(
   solution = CVRPSolution(name=name, vehicles=vehicles)
   return solution
 
+def solutionJsonWithTimeT(
+  time_exec: float,
+  instance: CVRPInstance, 
+  vehiclesPossibles
+  )-> CVRPSolutionOpt:
+  name = instance.name
+  vehicles = []
+  for k, v in vehiclesPossibles.items():
+    vehicle = []
+    dep = 0
+    for id_pack in v:
+      if dep == 0:
+        dep += 1
+        continue
+      else:
+        point = Point(
+          lng=instance.deliveries[id_pack].point.lng, 
+          lat=instance.deliveries[id_pack].point.lat
+        )
+        delivery = Delivery(
+          id_pack,
+          point,
+          instance.deliveries[id_pack].size,
+          instance.deliveries[id_pack].idu
+        )
+        vehicle.append(delivery)
+    vehicleConstruct = CVRPSolutionVehicle(origin=instance.origin, deliveries=vehicle)
+    vehicles.append(vehicleConstruct)
+  solution = CVRPSolutionOpt(name=name, vehicles=vehicles, time_exec = time_exec)
+  return solution
+
 def solutionJsonWithTime(
   time_exec: float,
   instance: CVRPInstance, 
