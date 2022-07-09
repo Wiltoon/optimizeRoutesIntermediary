@@ -9,14 +9,13 @@ from .interRoute import *
 
 def routingBatchs(vehiclesPossibles: dict, batch: deque, instance: CVRPInstance, 
     matrix, T, deliveries, decrease):
-    """Roteirizando um lote, os deliveries são aqueles já roteirizados"""
-    # decrease = False
-    # decrease = True
+    """Roteirizando um lote, os deliveries são aqueles já roteirizados que podem ser excluidos"""
     order_batch = orderBatch(batch, instance, vehiclesPossibles, decrease, matrix)
     # percorrer a fila dos pacotes dinamicos
     # print([d.idu for d in order_batch])
     # print(len(order_batch))
     while len(order_batch) > 0:
+        # print("TAMANHO DO LOTE: "+str(len(order_batch)))
         # tira o primeiro pacote dinamico do batch
         pack = order_batch.popleft() # Delivery()
         routingPack(vehiclesPossibles, pack, matrix, instance, order_batch, T, deliveries)
