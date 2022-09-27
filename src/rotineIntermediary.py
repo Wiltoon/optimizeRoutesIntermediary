@@ -2,6 +2,8 @@ import copy
 from itertools import combinations
 import time
 
+from .dinamic import reduceVehiclesDinamic
+
 from .twoopt import *
 from .interRoute import *
 from .computeDistances import * 
@@ -256,14 +258,17 @@ def rotineIntermediary(
     #   best_solution = sol2
     # else:
     #   break
-  # reduceVehicles(instance, vehiclesPossibles, matrix_distance)
+  vPoss = reduceVehiclesDinamic(instance=instance, vPoss= vehiclesPossibles, matrix=matrix_distance)
+  new_solution = solutionJson(instance, vPoss)
+  sol2 = calculateSolutionMatrix(new_solution, matrix_distance)
+  print(sol2)
   finish_t = time.time()
   time_t = finish_t - start_t
   fileNamePath = "out/"+method+"/"+city+"/"+instance.name+".json"
   new_solution_t = solutionJsonWithTime(
     time_t, 
     instance, 
-    vehiclesPossibles, 
+    vPoss, 
     fileNamePath
   )
  

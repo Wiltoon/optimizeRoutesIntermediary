@@ -18,7 +18,7 @@ def solveDynamic(instance: CVRPInstance, num_lotes, deliveries, vehiclesUseds, m
     """
     batchs = separateBatchs(instance, num_lotes)
     NUM_LOTE = 0
-    scores = []
+    # scores = []
     # print(batchs)
     for batch in batchs:
         routingBatchs(
@@ -50,7 +50,7 @@ def solveDynamicBatch(instance: CVRPInstance, num_lotes, deliveries, vehiclesUse
     vehicles = []
     soma = 0
     for batch in tqdm(batchs, desc="DESPACHANDO LOTES"):
-        print("LOTE "+str(NUM_LOTE)+":"+str(len(batch)))
+        # print("LOTE "+str(NUM_LOTE)+":",end=" ")
         routingBatchs(
             vehiclesPossibles = vehiclesUseds,
             batch = deque(batch),
@@ -60,25 +60,29 @@ def solveDynamicBatch(instance: CVRPInstance, num_lotes, deliveries, vehiclesUse
             deliveries = deliveries,
             decrease = order
         )
+        # print(vehiclesUseds)
         vehicles_aux = despatchVehicles(instance, vehiclesUseds, deliveries, 174)
+        # print("VEHICLES DESPACHADOS!")
+        # print(vehiclesUseds)
         # print("PACOTES EM ROTAS: "+str(len(deliveries)))
         for vehi in vehicles_aux:
             soma += len(vehi.deliveries)
             vehicles.append(vehi)
         # print("BATCH N = " + str(NUM_LOTE+1))
         NUM_LOTE += 1
-        print(len(vehicles))
+        # print(len(vehicles))
+    # print(vehiclesUseds)
     vehicles_aux = despatchVehicles(instance, vehiclesUseds, deliveries, 0)
     for vehicle in vehicles_aux:
         vehicles.append(vehicle)
         soma += len(vehicle.deliveries)
-    print("PACOTES COM ROTA: "+str(soma))
-    print("PACOTES SEM ROTA: "+str(len(deliveries)))
+    # print("PACOTES COM ROTA: "+str(soma))
+    # print("PACOTES SEM ROTA: "+str(len(deliveries)))
     solution = CVRPSolution(name = instance.name, vehicles = vehicles)
     return solution
 
 def despatchVehicles(instance, vehiclesUseds, deliverys, capacityMax) -> List[CVRPSolutionVehicle]:
-    print("LIMITE INFERIOR :" + str(capacityMax))
+    # print("LIMITE INFERIOR :" + str(capacityMax))
     idVehiclesDespatchs = []
     vehicles = []
     for k, v in vehiclesUseds.items():
@@ -88,6 +92,7 @@ def despatchVehicles(instance, vehiclesUseds, deliverys, capacityMax) -> List[CV
             capacity += instance.deliveries[d].size
         if capacity > capacityMax:
             idVehiclesDespatchs.append(k)
+    # print("IDS ROTES")
     # print(idVehiclesDespatchs)
     for id_route in idVehiclesDespatchs:
         vehicle = []
@@ -109,8 +114,8 @@ def despatchVehicles(instance, vehiclesUseds, deliverys, capacityMax) -> List[CV
         # print("OO QUE E ISSO:?")
         # print(vehiclesUseds[id_route][0]))
         # print(percorrer)
-        # for demand in percorrer:
-        #     deliverys.remove(demand)
+        for demand in percorrer:
+            deliverys.remove(demand)
         # print("Vehicle Despatch: ", len(vehicles))
         del vehiclesUseds[id_route]
     return vehicles
@@ -184,7 +189,7 @@ def solveD(instance, solution, matrix_distance, T, NUM_LOTES, org, SCOREMIN):
         score = calculateSolutionMatrix(new_solution, matrix_distance)
         if score < SCOREMIN:
             SCOREMIN = score
-            print(score,len(vPossibles),T,NUM_LOTES,nameOrg(org))
+            print(score+" "+len(vPossibles))
         return new_solution
     elif solution == "dinamico":
         
@@ -199,9 +204,8 @@ def solveD(instance, solution, matrix_distance, T, NUM_LOTES, org, SCOREMIN):
             TT = T,
             order = org
         )
-        print(len(new_solution.vehicles))
         score = calculateSolutionMatrix(new_solution, matrix_distance)
-        print(score)
+        print(str(score) + " " + str(len(new_solution.vehicles)), end=" ")
         return new_solution
         # print("CASO 1")
         # vehiclesPossibles = 0 # criar o dicionario a partir da solução
@@ -217,17 +221,17 @@ def executeDinamic():
     osrm_config = OSRMConfig(
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
-    cities = ["pa-0"]
+    cities = ["rj-0"]
     # mode = "estatico"
     mode = "dinamico"
-    se = [91,92]
+    se = [90,120]
     organisation = [None, True, False] # sem ordem, ordem decrescente, ordem crescente
     startInstance = se[0]
     endInstance = se[1]
     for city in cities:
         for day in range(startInstance, endInstance):
             instanceName = "cvrp-0-"+city.split('-')[0]+"-"+str(day)+".json"
-            print(instanceName)
+            # print(instanceName)
             path_instance = "inputs/"+city+"/"+instanceName
             instance = CVRPInstance.from_file(path_instance)
             points = [instance.origin] + [d.point for d in instance.deliveries]
@@ -237,12 +241,13 @@ def executeDinamic():
             for T in range(varT[0], varT[1]):
                 for org in organisation:
                     for NUM_LOTES in range(varLOTES[0], varLOTES[1]):
-                        print("Para T, NUM_LOTES, ORG = "+str(T)+"-"+str(NUM_LOTES) + nameOrg(org))
+                        # print("Para T, NUM_LOTES, ORG = "+str(T)+"-"+str(NUM_LOTES) + nameOrg(org))
                         name = "cvrp-0-"+city.split('-')[0]+"-"+str(day)+"-T-"+str(T)+"-L-"+str(NUM_LOTES)+"-O-"+nameOrg(org)
                         filename = "out/srn/"+city+"/"+name+".json"
                         scoremin = 999999999
                         solution = solveD(instance, mode, matrix_distance, T, NUM_LOTES, org, scoremin)
                         solution.to_file(filename)
+                print(" ")
 
 def nameOrg(value):
     if value == None:

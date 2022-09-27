@@ -2,12 +2,12 @@ from src.classes.types import *
 from src.rotineIntermediary import *
 
 def main():
-    T = 3
+    T = 30
     osrm_config = OSRMConfig(
         host="http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     )
-    methods = ["kvprfhete"]
-    cities = ["pa-0", "df-0"]
+    methods = ["kpprrf"]
+    cities = ["pa-0"]
     qtdInstances = 30
     for method in methods:
         for city in cities:
@@ -18,7 +18,7 @@ def main():
                 path_instance = "inputs/"+city+"/"+instanceName
                 try:
                     instance = CVRPInstance.from_file(path_instance)
-                    solution = CVRPSolution.from_file(solutionInitial)
+                    solution = CVRPSolutionKpprrf.from_file(solutionInitial)
                     new_solution = rotineIntermediary(
                         instance, solution, osrm_config, T, city, method
                         )

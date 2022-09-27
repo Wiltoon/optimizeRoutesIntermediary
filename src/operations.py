@@ -177,6 +177,7 @@ def solutionJson(
   )-> CVRPSolutionKpprrf:
   name = instance.name
   vehicles = []
+  # print(vehiclesPossibles)
   for k, v in vehiclesPossibles.items():
     vehicle = []
     dep = 0
@@ -302,12 +303,15 @@ def calculate_distance(indexes_points, matrix_distance):
 def reduceVehicles(instance, solution, vehiclesPossibles, matrix_distance):
   # reduzir o numero de veiculos
   vehicles_occupation = {}
+  print("Reduce")
   for v in range(0,len(vehiclesPossibles)):
     # acabar com os veiculos vazios
     if len(vehiclesPossibles[v]) != 0:
       vehicles_occupation[v] = vehiclesPossibles[v] #indices
+  print("Reduce")
   # selecionar um veiculo fraco (por capacidade ou por distancia/packet)
   vehicle, id_vehicle = selectVehicleWeak(instance, solution)
+  # print(vehicle)
   if vehicle != None:
     # feito assim para saber a distancia do dep -> cliente
     route_weak = [d.idu+1 for d in vehicle]

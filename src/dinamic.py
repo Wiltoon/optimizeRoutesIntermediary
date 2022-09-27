@@ -14,11 +14,14 @@ def routingBatchs(vehiclesPossibles: dict, batch: deque, instance: CVRPInstance,
     # percorrer a fila dos pacotes dinamicos
     # print([d.idu for d in order_batch])
     # print(len(order_batch))
+    possis = []
     while len(order_batch) > 0:
+        poss = [p.idu for p in order_batch]
         # print("TAMANHO DO LOTE: "+str(len(order_batch)))
         # tira o primeiro pacote dinamico do batch
         pack = order_batch.popleft() # Delivery()
-        routingPack(vehiclesPossibles, pack, matrix, instance, order_batch, T, deliveries)
+        routingPack(vehiclesPossibles, pack, matrix, instance, order_batch, T, deliveries, poss in possis)
+        possis.append(poss)
     return order_batch
 
 def orderBatch(batch, instance, vehiclesPossibles, order, md):
@@ -64,24 +67,25 @@ def meanDistance(p, packetsExist, md):
             d += md[p.idu+1][atual.idu+1]
     return d/len(packetsExist)
 
-def routingPack(vPoss, packet: Delivery, md, instance, batch, T, deliveries):
+def routingPack(vPoss, packet: Delivery, md, instance, batch, T, deliveries, loop):
     """
     Roteirizando um pacote dinamico (packet)
     """
     attempt = 0
     id_pack = packet.idu
     routes_neig = lookForNeighboringRoutes(packet, deliveries, md, vPoss, T) 
-    for rSelect in routes_neig:
-        try:
-            insertionPackInRoute(
-                instance, id_pack, vPoss, rSelect, batch, md, deliveries
-            ) #OK?
-            break
-        except NoRouterFound:
-            attempt += 1
+    if loop == False:
+        for rSelect in routes_neig:
+            try:
+                insertionPackInRoute(
+                    instance, id_pack, vPoss, rSelect, batch, md, deliveries
+                ) #OK?
+                break
+            except NoRouterFound:
+                attempt += 1
     # acabou o número de rotas vizinhas do pack dinamico e não foi alocado
     # print(id_pack, attempt)
-    if attempt == len(routes_neig): 
+    if attempt == len(routes_neig) or loop: 
         newRoute, id_route1 = createNewRoute(id_pack, vPoss, 180, deliveries) #ok
         # REAVALIAR A ROTA VIZINHA
         if attempt != 0:
@@ -110,7 +114,7 @@ def reduceVehicle(instance, vPoss, matrix):
             matrix)
     return vPoss
 
-def reduceVehicles(instance, vPoss, matrix):
+def reduceVehiclesDinamic(instance, vPoss, matrix):
     """Reduzir o número de veículos"""
     # calcular o total de cargas no sistema / carga maxima = numero minimo de veiculos
     num_min_vehicles = ceil(sum([d.size for d in instance.deliveries])/180)
@@ -151,7 +155,7 @@ def destroyVehicles(instance: CVRPInstance, vPoss, routes_selecteds, ids_routes,
     # rotear os pacotes livres
     batch, deliveries_exists = buildBatchRoutes(routes_selecteds, instance)
     # print([d.idu for d in batch])
-    routingBatchs(vPoss,deque(batch),instance,matrix,10,deliveries_exists,None)
+    routingBatchs(vPoss,deque(batch),instance,matrix,30,deliveries_exists,None)
     return vPoss
 
 def buildBatchRoute(route_select, instance):
@@ -211,7 +215,8 @@ def selectWeakestRoutes(instance, vPoss, metric, md, MIN_ROUTES):
     if metric == "DENSITY":
         decrease = True
         for k, v in vPoss.items():
-            density_distance = calculateDensityDistance(v[0], md)
+            print(v)
+            density_distance = calculateDensityDistance(v, md)
             routes[k] = density_distance
     elif metric == "CAPACITY":
         decrease = False
@@ -222,7 +227,7 @@ def selectWeakestRoutes(instance, vPoss, metric, md, MIN_ROUTES):
         if cont < MIN_ROUTES:
             cont += 1
             ids_routes.append(i)
-            routes_selects.append(vPoss[i][0])  
+            routes_selects.append(vPoss[i])  
     return routes_selects, ids_routes
 
 def calculateDensityDistance(route, md):
@@ -367,7 +372,7 @@ def lookForNeighboringRoutes(packet: Delivery, deliveries, md, vPoss: dict, T: i
         for d in packs_neigs:
             if auxT < T:
                 for k, v in vPoss.items():
-                    if d in v[0]:
+                    if d in v:
                         if k not in routes_neigs:
                             routes_neigs.append(k)
                         auxT += 1
@@ -377,7 +382,10 @@ def createNewRoute(packet_id, vehiclesPossibles, newCap, deliveries):
     """Criar uma nova rota do deposito até o packet"""
     # Duas opções -> Buscar 1 veículo disponivel ou Buscar 1 veículo padrão
     # Veículo padrão
-    newVehicle = len(vehiclesPossibles) + 1
+    try:
+        newVehicle = max(vehiclesPossibles) + 1
+    except ValueError:
+        newVehicle = 1
     vehiclesPossibles[newVehicle] = [[0, packet_id], newCap]
     deliveries.append(packet_id)
     # print("Nova rota criada")
