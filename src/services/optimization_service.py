@@ -5,7 +5,7 @@ from typing import Generator, Optional
 
 import numpy as np
 
-from ..classes.types import CVRPInstance, CVRPSolution, CVRPSolutionKpprrf
+from ..classes.types import CVRPInstance, CVRPSolution
 from ..classes.distances import OSRMConfig
 from ..interRoute import twoOptStar, twoOptStarModificated
 from ..operations import (
@@ -88,6 +88,9 @@ class OptimizationService:
         """
         Yield partial optimised solutions, one per batch.
 
+        Always uses the full instance for constraint checks so that idu values
+        from previous batches remain valid when new deliveries are added.
+
         Each yielded dict has the same shape as `optimize()` return value,
         plus `batch_index: int`.
         """
@@ -100,47 +103,38 @@ class OptimizationService:
             for i in range(0, len(deliveries), batch_size)
         ]
 
-        accumulated: list = []
         vehiclesPossibles: dict = {}
 
         for batch_idx, batch in enumerate(batches):
-            accumulated.extend(batch)
+            # Add each new delivery as its own vehicle
+            for d in batch:
+                new_key = len(vehiclesPossibles)
+                vehiclesPossibles[new_key] = [0, d.idu]
 
-            partial_instance = CVRPInstance(
-                name=instance.name,
-                region=instance.region,
-                origin=instance.origin,
-                vehicle_capacity=instance.vehicle_capacity,
-                deliveries=accumulated,
-            )
-
-            if not vehiclesPossibles:
-                partial_solution = copy.copy(solution)
-            else:
-                partial_solution = solutionJson(partial_instance, vehiclesPossibles)
-
-            vehiclesPossibles = createVehiclesPossibles(partial_solution)
             all_ids = list(range(len(vehiclesPossibles)))
             combs = list(combinations(all_ids, 2))
 
             start = time.time()
             for _ in range(iterations):
                 for c in combs:
-                    vehiclesPossibles[c[0]], vehiclesPossibles[c[1]] = twoOptStar(
-                        vehiclesPossibles[c[0]],
-                        vehiclesPossibles[c[1]],
-                        matrix_distance,
-                        partial_instance,
-                    )
+                    if c[0] in vehiclesPossibles and c[1] in vehiclesPossibles:
+                        vehiclesPossibles[c[0]], vehiclesPossibles[c[1]] = twoOptStar(
+                            vehiclesPossibles[c[0]],
+                            vehiclesPossibles[c[1]],
+                            matrix_distance,
+                            instance,
+                        )
                 for c in combs:
-                    vehiclesPossibles[c[0]], vehiclesPossibles[c[1]] = twoOptStarModificated(
-                        vehiclesPossibles[c[0]],
-                        vehiclesPossibles[c[1]],
-                        matrix_distance,
-                        partial_instance,
-                    )
+                    if c[0] in vehiclesPossibles and c[1] in vehiclesPossibles:
+                        vehiclesPossibles[c[0]], vehiclesPossibles[c[1]] = twoOptStarModificated(
+                            vehiclesPossibles[c[0]],
+                            vehiclesPossibles[c[1]],
+                            matrix_distance,
+                            instance,
+                        )
             elapsed = round(time.time() - start, 4)
-            partial_solution = solutionJson(partial_instance, vehiclesPossibles)
+
+            partial_solution = solutionJson(instance, vehiclesPossibles)
             total_km = calculateSolutionMatrix(partial_solution, matrix_distance)
 
             yield {
