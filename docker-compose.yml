@@ -1,0 +1,100 @@
+services:
+
+  # ── FastAPI application ──────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: optimizeroutes_api
+    ports:
+      - "8000:8000"
+    environment:
+      OSRM_HOST: http://osrm:5000
+      REDIS_URL: redis://redis:6379/0
+      API_SECRET_KEY: ${API_SECRET_KEY:-changeme}
+    depends_on:
+      redis:
+        condition: service_healthy
+      osrm:
+        condition: service_healthy
+    volumes:
+      - ./inputs:/app/inputs:ro
+      - ./out:/app/out
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  # ── Redis cache ──────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: optimizeroutes_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  # ── OSRM routing engine ──────────────────────────────────────────────────────
+  # Uses a pre-built Brazil OSM extract.
+  # On first run: docker compose run --rm osrm-preprocess (see below).
+  osrm:
+    image: osrm/osrm-backend:v5.27.1
+    container_name: optimizeroutes_osrm
+    ports:
+      - "5000:5000"
+    volumes:
+      - osrm-data:/data
+    command: osrm-routed --algorithm mld /data/brazil-latest.osrm
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  # ── One-shot OSRM pre-processing ─────────────────────────────────────────────
+  # Run once before starting: docker compose run --rm osrm-preprocess
+  osrm-preprocess:
+    image: osrm/osrm-backend:v5.27.1
+    container_name: optimizeroutes_osrm_preprocess
+    profiles:
+      - preprocess
+    volumes:
+      - osrm-data:/data
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        cd /data
+        if [ ! -f brazil-latest.osrm ]; then
+          echo "Downloading Brazil OSM extract..."
+          wget -q https://download.geofabrik.de/south-america/brazil-latest.osm.pbf
+          echo "Extracting..."
+          osrm-extract -p /opt/car.lua brazil-latest.osm.pbf
+          echo "Partitioning..."
+          osrm-partition brazil-latest.osrm
+          echo "Customizing..."
+          osrm-customize brazil-latest.osrm
+          echo "Pre-processing done."
+        else
+          echo "OSRM data already preprocessed, skipping."
+        fi
+    networks:
+      - app-net
+
+volumes:
+  osrm-data:
+
+networks:
+  app-net:
+    driver: bridge
