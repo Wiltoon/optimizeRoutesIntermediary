@@ -25,6 +25,22 @@ services:
     networks:
       - app-net
 
+  # ── Next.js frontend ─────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    container_name: optimizeroutes_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - app-net
+
   # ── Redis cache ──────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
@@ -42,8 +58,6 @@ services:
       - app-net
 
   # ── OSRM routing engine ──────────────────────────────────────────────────────
-  # Uses a pre-built Brazil OSM extract.
-  # On first run: docker compose run --rm osrm-preprocess (see below).
   osrm:
     image: osrm/osrm-backend:v5.27.1
     container_name: optimizeroutes_osrm
@@ -63,7 +77,6 @@ services:
       - app-net
 
   # ── One-shot OSRM pre-processing ─────────────────────────────────────────────
-  # Run once before starting: docker compose run --rm osrm-preprocess
   osrm-preprocess:
     image: osrm/osrm-backend:v5.27.1
     container_name: optimizeroutes_osrm_preprocess
