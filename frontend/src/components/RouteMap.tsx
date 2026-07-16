@@ -5,9 +5,12 @@ import type { GeoJSONResponse } from "@/types";
 
 interface RouteMapProps {
   geojson: GeoJSONResponse;
+  /** [lat, lng] pairs to zoom to instead of the full feature set — e.g. a
+   * selected vehicle's route, or a selected delivery and its neighbours. */
+  focusBounds?: [number, number][];
 }
 
-export default function RouteMap({ geojson }: RouteMapProps) {
+export default function RouteMap({ geojson, focusBounds }: RouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<unknown>(null);
   const layerGroupRef = useRef<unknown>(null);
@@ -48,7 +51,11 @@ export default function RouteMap({ geojson }: RouteMapProps) {
       if (cancelled) return;
 
       const map = mapInstanceRef.current as {
-        fitBounds: (bounds: [number, number][], options?: { padding: [number, number] }) => void;
+        fitBounds: (
+          bounds: [number, number][],
+          options?: { padding?: [number, number]; maxZoom?: number }
+        ) => void;
+        setView: (center: [number, number], zoom: number) => void;
       };
       const layerGroup = layerGroupRef.current as { clearLayers: () => void };
       layerGroup.clearLayers();
@@ -102,7 +109,11 @@ export default function RouteMap({ geojson }: RouteMapProps) {
         }
       });
 
-      if (bounds.length > 0) {
+      if (focusBounds && focusBounds.length === 1) {
+        map.setView(focusBounds[0], 16);
+      } else if (focusBounds && focusBounds.length > 1) {
+        map.fitBounds(focusBounds, { padding: [80, 80], maxZoom: 16 });
+      } else if (bounds.length > 0) {
         map.fitBounds(bounds, { padding: [30, 30] });
       }
     });
@@ -110,7 +121,7 @@ export default function RouteMap({ geojson }: RouteMapProps) {
     return () => {
       cancelled = true;
     };
-  }, [geojson]);
+  }, [geojson, focusBounds]);
 
   return <div ref={mapRef} className="w-full h-full rounded-xl" />;
 }

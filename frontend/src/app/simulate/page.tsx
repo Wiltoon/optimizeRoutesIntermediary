@@ -105,9 +105,54 @@ export default function SimulatePage() {
     return { type: "FeatureCollection", features };
   }
 
+  function computeFocusBounds(
+    batch: DynamicBatchEvent,
+    focusedVehicleIds: number[],
+    focusedDeliveryKey: string | null
+  ): [number, number][] | undefined {
+    // A selected package wins: zoom to it plus its immediate neighbours on
+    // the route, so you see the package within its route context.
+    if (focusedDeliveryKey) {
+      for (const v of batch.vehicles) {
+        const idx = v.deliveries.findIndex(
+          (d, i) => `${v.vehicle_id}-${String(d.id)}-${i}` === focusedDeliveryKey
+        );
+        if (idx === -1) continue;
+
+        const prev = idx > 0 ? v.deliveries[idx - 1].point : v.origin;
+        const current = v.deliveries[idx].point;
+        const next = idx < v.deliveries.length - 1 ? v.deliveries[idx + 1].point : v.origin;
+        return [
+          [prev.lat, prev.lng],
+          [current.lat, current.lng],
+          [next.lat, next.lng],
+        ];
+      }
+      return undefined;
+    }
+
+    // Otherwise, if vehicle(s) are selected, zoom to just their routes.
+    if (focusedVehicleIds.length > 0) {
+      const points: [number, number][] = [];
+      batch.vehicles
+        .filter((v) => focusedVehicleIds.includes(v.vehicle_id))
+        .forEach((v) => {
+          points.push([v.origin.lat, v.origin.lng]);
+          v.deliveries.forEach((d) => points.push([d.point.lat, d.point.lng]));
+        });
+      return points.length > 0 ? points : undefined;
+    }
+
+    return undefined;
+  }
+
   const currentGeo = currentBatch
     ? buildGeoFromBatch(currentBatch, selectedVehicleIds, selectedDeliveryKey)
     : null;
+
+  const focusBounds = currentBatch
+    ? computeFocusBounds(currentBatch, selectedVehicleIds, selectedDeliveryKey)
+    : undefined;
 
   function toggleVehicleCard(vehicleId: number) {
     setSelectedVehicleIds((prev) => {
@@ -269,7 +314,7 @@ export default function SimulatePage() {
       {/* ── Map ── */}
       <div className="flex-1 p-3">
         {currentGeo ? (
-          <RouteMap geojson={currentGeo} />
+          <RouteMap geojson={currentGeo} focusBounds={focusBounds} />
         ) : (
           <div className="flex items-center justify-center h-full text-gray-600 border-2 border-dashed border-gray-800 rounded-xl">
             <p>O mapa aparece aqui em tempo real durante a simulação</p>
