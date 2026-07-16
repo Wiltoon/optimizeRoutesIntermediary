@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Local dev run artifacts
+.run/
+
+# OSRM pre-processed map data (large binaries, download separately)
+resources/osrm-data/

@@ -1,0 +1,116 @@
+services:
+
+  # ── FastAPI application ──────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: optimizeroutes_api
+    ports:
+      - "8000:8000"
+    environment:
+      OSRM_HOST: http://osrm:5000
+      REDIS_URL: redis://redis:6379/0
+      API_SECRET_KEY: ${API_SECRET_KEY:-changeme}
+    depends_on:
+      redis:
+        condition: service_healthy
+      osrm:
+        condition: service_healthy
+    volumes:
+      - ./inputs:/app/inputs:ro
+      - ./out:/app/out
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  # ── Next.js frontend ─────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    container_name: optimizeroutes_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  # ── Redis cache ──────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: optimizeroutes_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  # ── OSRM routing engine ──────────────────────────────────────────────────────
+  osrm:
+    image: osrm/osrm-backend:latest
+    container_name: optimizeroutes_osrm
+    ports:
+      - "${OSRM_PORT:-5001}:5000"
+    volumes:
+      - ./resources/osrm-data:/data
+    environment:
+      OSRM_BASENAME: ${OSRM_BASENAME:-distrito-federal-latest}
+    command: ["/bin/sh", "-c", "osrm-routed --algorithm mld /data/${OSRM_BASENAME}.osrm"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:5000/nearest/v1/driving/-47.8825,-15.7942?number=1' >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  # ── One-shot OSRM pre-processing ─────────────────────────────────────────────
+  osrm-preprocess:
+    image: osrm/osrm-backend:latest
+    container_name: optimizeroutes_osrm_preprocess
+    profiles:
+      - preprocess
+    volumes:
+      - ./resources/osrm-data:/data
+    environment:
+      OSRM_BASENAME: ${OSRM_BASENAME:-distrito-federal-latest}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        cd /data
+        if [ ! -f "${OSRM_BASENAME}.osrm" ]; then
+          if [ ! -f "${OSRM_BASENAME}.osm.pbf" ]; then
+            echo "Missing /data/${OSRM_BASENAME}.osm.pbf. Download it on host first." >&2
+            exit 1
+          fi
+          echo "Extracting..."
+          osrm-extract -p /opt/car.lua "${OSRM_BASENAME}.osm.pbf"
+          echo "Partitioning..."
+          osrm-partition "${OSRM_BASENAME}.osrm"
+          echo "Customizing..."
+          osrm-customize "${OSRM_BASENAME}.osrm"
+          echo "Pre-processing done."
+        else
+          echo "OSRM data already preprocessed, skipping."
+        fi
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
