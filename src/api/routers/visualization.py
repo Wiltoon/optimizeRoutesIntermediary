@@ -82,7 +82,9 @@ def get_geojson(
         occupation_pct = vehicle.get("occupation_pct", 0.0)
         dist_km = vehicle.get("distance_km", 0.0)
 
-        route_coords = (
+        # Prefer the road-following geometry computed at /optimize time;
+        # fall back to straight waypoints for solutions cached before it existed.
+        route_coords = vehicle.get("geometry") or (
             [[origin["lng"], origin["lat"]]]
             + [[d["point"]["lng"], d["point"]["lat"]] for d in deliveries]
             + [[origin["lng"], origin["lat"]]]

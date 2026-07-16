@@ -68,8 +68,13 @@ def client(mock_redis, mock_osrm_config, small_distance_matrix, monkeypatch):
     app.dependency_overrides[get_redis] = lambda: mock_redis
     app.dependency_overrides[get_osrm_config] = lambda: mock_osrm_config
 
-    # Patch calculate_distance_matrix_m so no real HTTP calls are made
+    # Patch calculate_distance_matrix_m / calculate_route_geometry so no real HTTP calls are made
     monkeypatch.setattr(ds_mod, "calculate_distance_matrix_m", lambda *a, **kw: small_distance_matrix)
+    monkeypatch.setattr(
+        ds_mod,
+        "calculate_route_geometry",
+        lambda points, config=None: [[p.lng, p.lat] for p in points],
+    )
 
     with TestClient(app) as c:
         yield c

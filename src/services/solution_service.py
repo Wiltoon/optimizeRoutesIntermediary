@@ -133,11 +133,7 @@ class SolutionService:
             occupation_pct = round(occupation / cap * 100, 1) if cap > 0 else 0.0
             dist_km = vehicle_distances[idx]["distance_km"]
 
-            coords = (
-                [[vehicle.origin.lng, vehicle.origin.lat]]
-                + [[d.point.lng, d.point.lat] for d in vehicle.deliveries]
-                + [[vehicle.origin.lng, vehicle.origin.lat]]
-            )
+            coords = self.distance_service.vehicle_route_geometry(vehicle)
 
             features.append(
                 {

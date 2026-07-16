@@ -38,6 +38,15 @@ class VehicleRouteSchema(BaseModel):
     vehicle_id: int
     deliveries: List[DeliverySchema]
     origin: PointSchema
+    geometry: Optional[List[List[float]]] = Field(
+        default=None,
+        description="Road-following [lng, lat] path from OSRM; falls back to "
+                    "straight waypoints if OSRM is unavailable.",
+    )
+    distance_km: Optional[float] = Field(default=None, description="Route distance in km")
+    occupation_pct: Optional[float] = Field(
+        default=None, description="Vehicle capacity used, as a percentage"
+    )
 
 
 class OptimizeResponse(BaseModel):

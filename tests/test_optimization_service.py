@@ -60,6 +60,11 @@ def fixed_matrix():
 def dist_service(fixed_matrix, monkeypatch):
     from src.services import distance_service as ds_mod
     monkeypatch.setattr(ds_mod, "calculate_distance_matrix_m", lambda *a, **kw: fixed_matrix)
+    monkeypatch.setattr(
+        ds_mod,
+        "calculate_route_geometry",
+        lambda points, config=None: [[p.lng, p.lat] for p in points],
+    )
     return DistanceService()
 
 
@@ -100,6 +105,39 @@ class TestDistanceService:
         ids = [v["vehicle_id"] for v in breakdown]
         assert ids == list(range(len(initial_solution.vehicles)))
 
+    def test_vehicle_route_geometry_uses_osrm_geometry(self, monkeypatch, initial_solution):
+        from src.classes import distances as distances_mod
+
+        fake_coords = [[-47.93, -1.29], [-47.925, -1.285], [-47.92, -1.28]]
+
+        class FakeResponse:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"routes": [{"geometry": {"coordinates": fake_coords}}]}
+
+        monkeypatch.setattr(distances_mod.requests, "get", lambda *a, **kw: FakeResponse())
+
+        service = DistanceService()
+        geometry = service.vehicle_route_geometry(initial_solution.vehicles[0])
+        assert geometry == fake_coords
+
+    def test_vehicle_route_geometry_falls_back_on_osrm_failure(self, initial_solution, monkeypatch):
+        from src.classes import distances as distances_mod
+        import requests
+
+        def raise_connection_error(*a, **kw):
+            raise requests.RequestException("OSRM unreachable")
+
+        monkeypatch.setattr(distances_mod.requests, "get", raise_connection_error)
+
+        service = DistanceService()
+        vehicle = initial_solution.vehicles[0]
+        geometry = service.vehicle_route_geometry(vehicle)
+        expected = [[p.lng, p.lat] for p in vehicle.circuit]
+        assert geometry == expected
+
 
 # ─────────────────────────────────────────────────────────────
 # OptimizationService tests
@@ -109,7 +147,9 @@ class TestOptimizationService:
 
     def test_optimize_returns_expected_keys(self, opt_service, small_instance, initial_solution):
         result = opt_service.optimize(small_instance, initial_solution, iterations=1)
-        assert set(result.keys()) == {"solution", "total_distance_km", "num_vehicles", "time_s"}
+        assert set(result.keys()) == {
+            "solution", "total_distance_km", "num_vehicles", "time_s", "matrix_distance",
+        }
 
     def test_optimize_solution_covers_all_deliveries(self, opt_service, small_instance, initial_solution):
         result = opt_service.optimize(small_instance, initial_solution, iterations=1)

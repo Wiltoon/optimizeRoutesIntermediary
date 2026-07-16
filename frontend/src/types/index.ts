@@ -24,6 +24,11 @@ export interface VehicleRoute {
   vehicle_id: number;
   origin: Point;
   deliveries: Delivery[];
+  /** Road-following [lng, lat] path from OSRM; falls back to straight
+   * waypoints server-side if OSRM is unavailable. */
+  geometry?: number[][];
+  distance_km?: number;
+  occupation_pct?: number;
 }
 
 export interface OptimizeRequest {

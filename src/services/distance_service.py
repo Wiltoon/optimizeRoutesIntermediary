@@ -2,11 +2,12 @@ from typing import Optional, List
 import numpy as np
 import requests
 
-from ..classes.types import CVRPInstance, CVRPSolution
+from ..classes.types import CVRPInstance, CVRPSolution, CVRPSolutionVehicle
 from ..classes.distances import (
     OSRMConfig,
     calculate_distance_matrix_m,
     calculate_distance_matrix_great_circle_m,
+    calculate_route_geometry,
 )
 
 
@@ -26,6 +27,14 @@ class DistanceService:
         except requests.RequestException:
             # Keep local development usable when OSRM is unavailable.
             return calculate_distance_matrix_great_circle_m(points)
+
+    def vehicle_route_geometry(self, vehicle: CVRPSolutionVehicle) -> List[List[float]]:
+        """Road-following [lng, lat] path for a single vehicle's route.
+
+        Falls back to the straight origin/deliveries/origin waypoints if
+        OSRM is unavailable (handled inside calculate_route_geometry).
+        """
+        return calculate_route_geometry(vehicle.circuit, self.config)
 
     def build_matrix_great_circle(self, instance: CVRPInstance) -> np.ndarray:
         """Fallback matrix using great-circle distances (no OSRM required)."""

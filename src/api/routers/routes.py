@@ -21,6 +21,7 @@ from ...classes.types import (
     Delivery,
     Point,
 )
+from ...services.distance_service import DistanceService
 from ...services.optimization_service import OptimizationService
 from ...services.solution_service import SolutionService
 
@@ -49,9 +50,19 @@ def _build_instance(data) -> CVRPInstance:
     )
 
 
-def _solution_to_response_vehicles(solution: CVRPSolution):
+def _solution_to_response_vehicles(
+    solution: CVRPSolution,
+    dist_service: DistanceService,
+    matrix_distance,
+    vehicle_capacity: int,
+):
+    vehicle_distances = dist_service.vehicle_distance_km(solution, matrix_distance)
+
     vehicles = []
     for idx, v in enumerate(solution.vehicles):
+        load = sum(d.size for d in v.deliveries)
+        occupation_pct = round(load / vehicle_capacity * 100, 1) if vehicle_capacity > 0 else 0.0
+
         vehicles.append(
             VehicleRouteSchema(
                 vehicle_id=idx,
@@ -65,6 +76,9 @@ def _solution_to_response_vehicles(solution: CVRPSolution):
                     }
                     for d in v.deliveries
                 ],
+                geometry=dist_service.vehicle_route_geometry(v),
+                distance_km=vehicle_distances[idx]["distance_km"],
+                occupation_pct=occupation_pct,
             )
         )
     return vehicles
@@ -111,9 +125,12 @@ def optimize_routes(
         method=body.method,
     )
 
+    dist_service = opt_service.distance_service
     response = OptimizeResponse(
         solution_id=solution_id,
-        vehicles=_solution_to_response_vehicles(result["solution"]),
+        vehicles=_solution_to_response_vehicles(
+            result["solution"], dist_service, result["matrix_distance"], instance.vehicle_capacity
+        ),
         total_distance_km=result["total_distance_km"],
         num_vehicles=result["num_vehicles"],
         time_s=result["time_s"],
@@ -145,6 +162,8 @@ def simulate_dynamic(
     ]
     initial_solution = CVRPSolution(name=instance.name, vehicles=vehicles)
 
+    dist_service = opt_service.distance_service
+
     def event_stream():
         for batch in opt_service.optimize_dynamic(
             instance=instance,
@@ -155,7 +174,9 @@ def simulate_dynamic(
         ):
             event = DynamicBatchEvent(
                 batch_index=batch["batch_index"],
-                vehicles=_solution_to_response_vehicles(batch["solution"]),
+                vehicles=_solution_to_response_vehicles(
+                    batch["solution"], dist_service, batch["matrix_distance"], instance.vehicle_capacity
+                ),
                 total_distance_km=batch["total_distance_km"],
                 num_vehicles=batch["num_vehicles"],
                 time_s=batch["time_s"],

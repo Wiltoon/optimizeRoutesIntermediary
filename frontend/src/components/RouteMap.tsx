@@ -7,9 +7,6 @@ interface RouteMapProps {
   geojson: GeoJSONResponse;
 }
 
-const OSRM_BASE = process.env.NEXT_PUBLIC_OSRM_URL ?? "http://localhost:5001";
-const MAX_OSRM_ROUTE_REQUESTS = 25;
-
 export default function RouteMap({ geojson }: RouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<unknown>(null);
@@ -47,7 +44,7 @@ export default function RouteMap({ geojson }: RouteMapProps) {
     if (!mapInstanceRef.current || !layerGroupRef.current) return;
     let cancelled = false;
 
-    import("leaflet").then(async (L) => {
+    import("leaflet").then((L) => {
       if (cancelled) return;
 
       const map = mapInstanceRef.current as {
@@ -56,38 +53,7 @@ export default function RouteMap({ geojson }: RouteMapProps) {
       const layerGroup = layerGroupRef.current as { clearLayers: () => void };
       layerGroup.clearLayers();
 
-      const lineFeatures = geojson.features.filter((f) => f.geometry.type === "LineString");
-
-      const routedCoordinates = await Promise.all(
-        lineFeatures.map(async (feature, idx) => {
-          const shouldUseOsrm = Boolean(feature.properties.use_osrm ?? true);
-          if (!shouldUseOsrm || idx >= MAX_OSRM_ROUTE_REQUESTS) {
-            return null;
-          }
-
-          const coords = feature.geometry.coordinates as number[][];
-          if (coords.length < 2) return null;
-
-          const coordString = coords.map(([lng, lat]) => `${lng},${lat}`).join(";");
-          const url = `${OSRM_BASE}/route/v1/driving/${coordString}?overview=full&geometries=geojson&steps=false`;
-
-          try {
-            const res = await fetch(url);
-            if (!res.ok) return null;
-            const data = await res.json() as {
-              routes?: Array<{ geometry?: { coordinates?: number[][] } }>;
-            };
-            return data.routes?.[0]?.geometry?.coordinates ?? null;
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      if (cancelled) return;
-
       const bounds: [number, number][] = [];
-      let lineIdx = 0;
 
       geojson.features.forEach((feature) => {
         const color = (feature.properties.color as string) ?? "#3b82f6";
@@ -98,9 +64,9 @@ export default function RouteMap({ geojson }: RouteMapProps) {
         const pointRadius = Number(feature.properties.point_radius ?? 5);
 
         if (feature.geometry.type === "LineString") {
-          const fallbackCoords = feature.geometry.coordinates as number[][];
-          const coords = routedCoordinates[lineIdx] ?? fallbackCoords;
-          lineIdx += 1;
+          // Geometry is already road-following (computed server-side via OSRM,
+          // with a straight-waypoint fallback baked in) — draw it as-is.
+          const coords = feature.geometry.coordinates as number[][];
           const latlngs = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
           bounds.push(...latlngs);
 

@@ -144,6 +144,7 @@ class OptimizationService:
             "total_distance_km": total_km,
             "num_vehicles": len(new_solution.vehicles),
             "time_s": elapsed,
+            "matrix_distance": matrix_distance,
         }
 
     def optimize_dynamic(
@@ -219,4 +220,5 @@ class OptimizationService:
                 "total_distance_km": total_km,
                 "num_vehicles": len(partial_solution.vehicles),
                 "time_s": elapsed,
+                "matrix_distance": matrix_distance,
             }

@@ -60,11 +60,16 @@ export default function SimulatePage() {
     batch.vehicles.forEach((v, idx) => {
       const color = palette[idx % palette.length];
       const isSelectedVehicle = !hasVehicleSelection || focusedVehicleIds.includes(v.vehicle_id);
-      const coords = [
-        [v.origin.lng, v.origin.lat],
-        ...v.deliveries.map((d) => [d.point.lng, d.point.lat]),
-        [v.origin.lng, v.origin.lat],
-      ];
+      // Road-following path computed server-side via OSRM; fall back to
+      // straight waypoints only if the backend couldn't provide one.
+      const coords =
+        v.geometry && v.geometry.length > 1
+          ? v.geometry
+          : [
+              [v.origin.lng, v.origin.lat],
+              ...v.deliveries.map((d) => [d.point.lng, d.point.lat]),
+              [v.origin.lng, v.origin.lat],
+            ];
       features.push({
         type: "Feature",
         geometry: { type: "LineString", coordinates: coords },
@@ -72,9 +77,8 @@ export default function SimulatePage() {
           vehicle_id: v.vehicle_id,
           color,
           num_deliveries: v.deliveries.length,
-          distance_km: 0,
-          occupation_pct: 0,
-          use_osrm: true,
+          distance_km: v.distance_km ?? 0,
+          occupation_pct: v.occupation_pct ?? 0,
           line_opacity: isSelectedVehicle ? 0.95 : 0.15,
           line_weight: isSelectedVehicle ? 5 : 2,
         },

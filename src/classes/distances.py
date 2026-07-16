@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Iterable, Optional, Any
+from typing import Iterable, List, Optional, Any
 
 import requests
 import numpy as np
@@ -14,6 +14,10 @@ EARTH_RADIUS_METERS = 6371000
 class OSRMConfig:
     host: str = "http://ec2-34-222-175-250.us-west-2.compute.amazonaws.com"
     timeout_s: int = 600
+    route_timeout_s: int = 5
+    """Timeout for single-route geometry lookups (used for map display, not
+    the distance matrix). Kept short since these are best-effort and must
+    fail fast to a straight-line fallback rather than stall a request."""
 
 
 def calculate_distance_matrix_m(
@@ -57,6 +61,36 @@ def calculate_route_distance_m(
     response.raise_for_status()
 
     return min(r["distance"] for r in response.json()["routes"])
+
+
+def calculate_route_geometry(
+    points: Iterable[Point], config: Optional[OSRMConfig] = None
+) -> List[List[float]]:
+    """Fetch the road-following path OSRM would drive through `points`, in order.
+
+    Returns a list of [lng, lat] coordinate pairs tracing the actual road
+    geometry (not just the input waypoints). Falls back to the straight
+    waypoints themselves if OSRM is unreachable or returns an error, so
+    callers never need their own try/except around this.
+    """
+    config = config or OSRMConfig()
+    waypoints = [[point.lng, point.lat] for point in points]
+
+    if len(waypoints) < 2:
+        return waypoints
+
+    coords_uri = ";".join(f"{lng},{lat}" for lng, lat in waypoints)
+
+    try:
+        response = requests.get(
+            f"{config.host}/route/v1/driving/{coords_uri}",
+            params={"geometries": "geojson", "overview": "full"},
+            timeout=config.route_timeout_s,
+        )
+        response.raise_for_status()
+        return response.json()["routes"][0]["geometry"]["coordinates"]
+    except (requests.RequestException, KeyError, IndexError, ValueError):
+        return waypoints
 
 
 def calculate_distance_matrix_great_circle_m(

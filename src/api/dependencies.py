@@ -15,6 +15,7 @@ def get_osrm_config() -> OSRMConfig:
     return OSRMConfig(
         host=os.getenv("OSRM_HOST", "http://localhost:5000"),
         timeout_s=int(os.getenv("OSRM_TIMEOUT_S", "600")),
+        route_timeout_s=int(os.getenv("OSRM_ROUTE_TIMEOUT_S", "5")),
     )
 
 
