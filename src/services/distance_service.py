@@ -1,5 +1,6 @@
 from typing import Optional, List
 import numpy as np
+import requests
 
 from ..classes.types import CVRPInstance, CVRPSolution
 from ..classes.distances import (
@@ -20,7 +21,11 @@ class DistanceService:
         origin = [instance.origin]
         deliveries = [d.point for d in instance.deliveries]
         points = [*origin, *deliveries]
-        return calculate_distance_matrix_m(points, self.config)
+        try:
+            return calculate_distance_matrix_m(points, self.config)
+        except requests.RequestException:
+            # Keep local development usable when OSRM is unavailable.
+            return calculate_distance_matrix_great_circle_m(points)
 
     def build_matrix_great_circle(self, instance: CVRPInstance) -> np.ndarray:
         """Fallback matrix using great-circle distances (no OSRM required)."""

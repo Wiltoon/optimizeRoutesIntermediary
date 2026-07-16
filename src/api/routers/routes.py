@@ -151,6 +151,7 @@ def simulate_dynamic(
             solution=initial_solution,
             num_lotes=body.num_lotes,
             iterations=body.iterations,
+            delay_ms=body.delay_ms,
         ):
             event = DynamicBatchEvent(
                 batch_index=batch["batch_index"],

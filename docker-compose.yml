@@ -59,15 +59,17 @@ services:
 
   # ── OSRM routing engine ──────────────────────────────────────────────────────
   osrm:
-    image: osrm/osrm-backend:v5.27.1
+    image: osrm/osrm-backend:latest
     container_name: optimizeroutes_osrm
     ports:
-      - "5000:5000"
+      - "${OSRM_PORT:-5001}:5000"
     volumes:
-      - osrm-data:/data
-    command: osrm-routed --algorithm mld /data/brazil-latest.osrm
+      - ./resources/osrm-data:/data
+    environment:
+      OSRM_BASENAME: ${OSRM_BASENAME:-distrito-federal-latest}
+    command: ["/bin/sh", "-c", "osrm-routed --algorithm mld /data/${OSRM_BASENAME}.osrm"]
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      test: ["CMD-SHELL", "wget -qO- 'http://localhost:5000/nearest/v1/driving/-47.8825,-15.7942?number=1' >/dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -78,35 +80,36 @@ services:
 
   # ── One-shot OSRM pre-processing ─────────────────────────────────────────────
   osrm-preprocess:
-    image: osrm/osrm-backend:v5.27.1
+    image: osrm/osrm-backend:latest
     container_name: optimizeroutes_osrm_preprocess
     profiles:
       - preprocess
     volumes:
-      - osrm-data:/data
+      - ./resources/osrm-data:/data
+    environment:
+      OSRM_BASENAME: ${OSRM_BASENAME:-distrito-federal-latest}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         set -e
         cd /data
-        if [ ! -f brazil-latest.osrm ]; then
-          echo "Downloading Brazil OSM extract..."
-          wget -q https://download.geofabrik.de/south-america/brazil-latest.osm.pbf
+        if [ ! -f "${OSRM_BASENAME}.osrm" ]; then
+          if [ ! -f "${OSRM_BASENAME}.osm.pbf" ]; then
+            echo "Missing /data/${OSRM_BASENAME}.osm.pbf. Download it on host first." >&2
+            exit 1
+          fi
           echo "Extracting..."
-          osrm-extract -p /opt/car.lua brazil-latest.osm.pbf
+          osrm-extract -p /opt/car.lua "${OSRM_BASENAME}.osm.pbf"
           echo "Partitioning..."
-          osrm-partition brazil-latest.osrm
+          osrm-partition "${OSRM_BASENAME}.osrm"
           echo "Customizing..."
-          osrm-customize brazil-latest.osrm
+          osrm-customize "${OSRM_BASENAME}.osrm"
           echo "Pre-processing done."
         else
           echo "OSRM data already preprocessed, skipping."
         fi
     networks:
       - app-net
-
-volumes:
-  osrm-data:
 
 networks:
   app-net:

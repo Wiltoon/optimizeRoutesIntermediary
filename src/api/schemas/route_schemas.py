@@ -52,6 +52,7 @@ class DynamicOptimizeRequest(BaseModel):
     instance: CVRPInstanceSchema
     num_lotes: int = Field(default=4, ge=1, le=50)
     iterations: int = Field(default=10, ge=1, le=100)
+    delay_ms: int = Field(default=0, ge=0, le=5000)
 
 
 class DynamicBatchEvent(BaseModel):
